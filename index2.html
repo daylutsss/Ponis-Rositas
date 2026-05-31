@@ -191,6 +191,7 @@
             <button id="btn-tab-recetas" class="nav-btn" onclick="showTab('recetas', this)"><i class="fa-solid fa-mortar-pestle"></i> Recetas e Hitos</button>
             <button id="btn-tab-cronograma" class="nav-btn" onclick="showTab('cronograma', this)"><i class="fa-solid fa-calendar-alt"></i> Cronograma</button>
             <button id="btn-tab-salud" class="nav-btn" onclick="showTab('salud', this)"><i class="fa-solid fa-heart-pulse"></i> Salud</button>
+            <button id="btn-tab-apis" class="nav-btn" onclick="showTab('apis', this)"><i class="fa-solid fa-cloud-sun"></i> APIs</button>
             <button id="btn-tab-registros" class="nav-btn admin-only hidden" onclick="showTab('registros', this)"><i class="fa-solid fa-folder-open"></i> Registros</button>
         </nav>
         <button class="btn-accent" style="margin-top:auto; background:var(--danger);" onclick="logout()">CERRAR SESIÓN</button>
@@ -393,6 +394,34 @@
             </div>
         </div>
 
+
+        <div id="tab-apis" class="tab-pane hidden">
+            <div class="grid-2">
+                <div class="card">
+                    <h3>🌿 API sobre Lavanda</h3>
+                    <p>Consulta información externa sobre la planta de lavanda.</p>
+                    <button class="btn-accent" onclick="cargarLavandaApi()">CARGAR INFORMACIÓN</button>
+                    <div id="api-lavanda" style="margin-top:15px;">Esperando consulta...</div>
+                </div>
+
+                <div class="card">
+                    <h3>🥗 API de Nutrición</h3>
+                    <p>Busca información nutricional de alimentos relacionados con vida saludable.</p>
+                    <input type="text" id="nutri-search" class="input-std" value="honey" placeholder="Ejemplo: honey, tea, apple">
+                    <button class="btn-accent" style="margin-top:10px;" onclick="cargarNutricionApi()">BUSCAR NUTRICIÓN</button>
+                    <div id="api-nutricion" style="margin-top:15px;">Esperando búsqueda...</div>
+                </div>
+
+                <div class="card">
+                    <h3>🌦️ API del Clima</h3>
+                    <p>Consulta el clima de una ciudad para relacionarlo con el cuidado de plantas.</p>
+                    <input type="text" id="clima-ciudad" class="input-std" value="Celaya" placeholder="Ciudad">
+                    <button class="btn-accent" style="margin-top:10px;" onclick="cargarClimaApi()">CONSULTAR CLIMA</button>
+                    <div id="api-clima" style="margin-top:15px;">Esperando consulta...</div>
+                </div>
+            </div>
+        </div>
+
         <div id="tab-registros" class="tab-pane hidden">
             <div class="card">
                 <h3>Historial de IMC</h3>
@@ -422,52 +451,163 @@
     </main>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('botanica_db')) || { accesos: [], imc: [] };
+        /*
+          IMPORTANTE:
+          Este HTML guarda y carga datos desde tu servidor en Render.
+          Tu server.js debe tener estas rutas:
+          /api/accesos
+          /api/imc
+          /api/comentarios
+          /api/fotos
+          /api/contenido/:clave
+
+          En Render debes tener configurada la variable:
+          DATABASE_URL = tu URL de Neon/Postgres
+        */
+
+        let db = { accesos: [], imc: [] };
         let session = JSON.parse(localStorage.getItem('botanica_session')) || null;
-       
-        let opinionesData = JSON.parse(localStorage.getItem('botanica_opiniones')) || [
-            { id: 1, nombre: "Mariana L. (6to Grado)", texto: "El jabón artesanal de lavanda que hicimos nos dejó las manos súper suaves, y huele riquísimo." },
-            { id: 2, nombre: "Carlos T. (5to Grado)", texto: "Me gusta mucho la infusión porque me relaja bastante antes de los exámenes difíciles." }
-        ];
-
-        let fotosData = JSON.parse(localStorage.getItem('botanica_fotos')) || [
-            { id: "ex1", nombre: "Valeria 4°A", src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23555'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23fff' font-size='10'>Mi Girasol</text></svg>" },
-            { id: "ex2", nombre: "Santi 5°B", src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23555'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23fff' font-size='10'>Mi Cactus</text></svg>" }
-        ];
-
-        if(localStorage.getItem('botanica_receta_title')) {
-            window.addEventListener('DOMContentLoaded', () => {
-                document.getElementById('title-recetas').innerHTML = localStorage.getItem('botanica_receta_title');
-                document.getElementById('editor-recetas').innerHTML = localStorage.getItem('botanica_receta_body');
-            });
-        }
-        if(localStorage.getItem('botanica_polinizadores_title')) {
-            window.addEventListener('DOMContentLoaded', () => {
-                document.getElementById('title-polinizadores').innerHTML = localStorage.getItem('botanica_polinizadores_title');
-                document.getElementById('editor-polinizadores').innerHTML = localStorage.getItem('botanica_polinizadores_body');
-            });
-        }
-
+        let opinionesData = [];
+        let fotosData = [];
+        let galeriaSemanas = {};
         let scrollOffsets = { 'gallery-track-1': 0, 'gallery-track-2': 0 };
 
-        window.onload = () => {
-            if(session) {
-                aplicarSesion();
-               
-                const ultimaTab = localStorage.getItem('botanica_last_tab') || 'inicio';
-                const botonActivo = document.getElementById('btn-tab-' + ultimaTab);
-                if(botonActivo) {
-                    showTab(ultimaTab, botonActivo);
-                }
+        async function api(url, options = {}) {
+            const respuesta = await fetch(url, {
+                headers: { "Content-Type": "application/json" },
+                ...options
+            });
+
+            if (!respuesta.ok) {
+                const texto = await respuesta.text();
+                throw new Error(`Error API ${url}: ${texto}`);
             }
-           
+
+            return respuesta.json();
+        }
+
+        window.onload = async () => {
             if (localStorage.getItem('botanica_theme') === 'light') {
                 document.body.classList.add('light-mode');
+            }
+
+            await cargarDatosDesdeNeon();
+            await cargarContenidoEditable();
+            await cargarGaleriaSemanas();
+
+            if (session) {
+                aplicarSesion();
+
+                const ultimaTab = localStorage.getItem('botanica_last_tab') || 'inicio';
+                const botonActivo = document.getElementById('btn-tab-' + ultimaTab);
+
+                if (botonActivo) {
+                    showTab(ultimaTab, botonActivo);
+                }
             }
 
             renderOpiniones();
             renderFotosUsuario();
         };
+
+        async function cargarDatosDesdeNeon() {
+            try {
+                const accesos = await api("/api/accesos");
+                const imc = await api("/api/imc");
+                const comentarios = await api("/api/comentarios");
+                const fotos = await api("/api/fotos");
+
+                db.accesos = accesos.map(a => ({
+                    id: a.id,
+                    user: a.usuario || a.user || "Sin usuario",
+                    pass: a.password || a.pass || "---",
+                    role: a.role || "user",
+                    date: a.fecha ? new Date(a.fecha).toLocaleString() : (a.date || "")
+                }));
+
+                db.imc = imc.map(i => ({
+                    id: i.id,
+                    user: i.usuario || i.user || "Invitado",
+                    date: i.fecha ? new Date(i.fecha).toLocaleString() : (i.date || ""),
+                    data: `${i.peso || ""}kg / ${i.altura || ""}m`,
+                    val: i.resultado || i.val || "",
+                    est: i.estado || i.est || ""
+                }));
+
+                opinionesData = comentarios.map(c => ({
+                    id: c.id,
+                    nombre: c.nombre,
+                    texto: c.comentario || c.texto
+                }));
+
+                fotosData = fotos.map(f => ({
+                    id: f.id,
+                    nombre: f.nombre,
+                    src: f.imagen || f.src
+                }));
+
+            } catch (error) {
+                console.error(error);
+                alert("No se pudieron cargar datos desde Neon. Revisa que Render tenga DATABASE_URL y que server.js tenga las rutas /api.");
+            }
+        }
+
+        async function cargarContenidoEditable() {
+            try {
+                const recetas = await api("/api/contenido/recetas");
+                const polinizadores = await api("/api/contenido/polinizadores");
+
+                if (recetas) {
+                    document.getElementById('title-recetas').innerHTML = recetas.titulo || "RECETAS";
+                    document.getElementById('editor-recetas').innerHTML = recetas.cuerpo || document.getElementById('editor-recetas').innerHTML;
+                }
+
+                if (polinizadores) {
+                    document.getElementById('title-polinizadores').innerHTML = polinizadores.titulo || "Polinizadores y su Relación con el Jardín Escolar";
+                    document.getElementById('editor-polinizadores').innerHTML = polinizadores.cuerpo || document.getElementById('editor-polinizadores').innerHTML;
+                }
+
+            } catch (error) {
+                console.error("No se cargó contenido editable:", error);
+            }
+        }
+
+        async function cargarGaleriaSemanas() {
+            try {
+                const data = await api("/api/contenido/galeria_semanas");
+
+                if (data && data.cuerpo) {
+                    galeriaSemanas = JSON.parse(data.cuerpo);
+
+                    Object.keys(galeriaSemanas).forEach(idImagen => {
+                        const img = document.getElementById(idImagen);
+
+                        if (img) {
+                            img.src = galeriaSemanas[idImagen];
+                            img.classList.remove('hidden');
+                        }
+                    });
+                }
+
+            } catch (error) {
+                console.error("No se cargó galería de semanas:", error);
+            }
+        }
+
+        async function guardarGaleriaSemanas() {
+            try {
+                await api("/api/contenido/galeria_semanas", {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        titulo: "Galería de semanas",
+                        cuerpo: JSON.stringify(galeriaSemanas)
+                    })
+                });
+            } catch (error) {
+                console.error(error);
+                alert("No se pudo guardar la imagen de la galería en Neon.");
+            }
+        }
 
         function togglePass(id, icon) {
             const p = document.getElementById(id);
@@ -475,38 +615,48 @@
             icon.classList.toggle('fa-eye-slash');
         }
 
-        function login() {
+        async function login() {
             const user = (document.getElementById('user-in').value || "Paola").trim();
             const pass = document.getElementById('pass-in').value || "---";
             const role = document.getElementById('role-in').value;
             const master = document.getElementById('master-key').value;
 
-            if(role === 'admin' && master !== 'ponis_rositas') return alert("Clave Maestra Incorrecta");
-
-            session = { user, role, isAdmin: (role === 'admin') };
-
-            const indexExistente = db.accesos.findIndex(a => a.user.toLowerCase() === user.toLowerCase() && a.role === role);
-
-            if (indexExistente !== -1) {
-                db.accesos[indexExistente].pass = pass;
-                db.accesos[indexExistente].date = new Date().toLocaleString();
-            } else {
-                db.accesos.push({ id: Date.now(), user, pass, role, date: new Date().toLocaleString() });
+            if (role === 'admin' && master !== 'ponis_rositas') {
+                return alert("Clave Maestra Incorrecta");
             }
-           
-            saveData();
-            aplicarSesion();
-           
-            showTab('inicio', document.getElementById('btn-tab-inicio'));
+
+            session = { user, role, isAdmin: role === 'admin' };
+
+            try {
+                await api("/api/accesos", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        usuario: user,
+                        password: pass,
+                        role: role
+                    })
+                });
+
+                await cargarDatosDesdeNeon();
+                aplicarSesion();
+                showTab('inicio', document.getElementById('btn-tab-inicio'));
+
+            } catch (error) {
+                console.error(error);
+                alert("No se pudo guardar el acceso en Neon.");
+            }
         }
 
         function aplicarSesion() {
             localStorage.setItem('botanica_session', JSON.stringify(session));
-            if(session.isAdmin) {
+
+            if (session.isAdmin) {
                 document.querySelectorAll('.admin-only, #badge-admin').forEach(el => el.classList.remove('hidden'));
             }
+
             document.getElementById('welcome-txt').innerText = "Bienvenida, " + session.user;
             document.getElementById('login-overlay').classList.add('hidden');
+
             renderOpiniones();
             renderFotosUsuario();
         }
@@ -517,23 +667,28 @@
             location.reload();
         }
 
-        // CONTROL DE PESTAÑAS Y RENDERIZACIÓN
         function showTab(id, btn) {
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
             document.getElementById('tab-' + id).classList.remove('hidden');
+
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-           
+
             localStorage.setItem('botanica_last_tab', id);
-           
-            if(id === 'registros') renderRegistros();
+
+            if (id === 'registros') {
+                renderRegistros();
+            }
         }
 
         function addBox(containerId, withImg = false) {
             const id = Date.now();
-            const imgHtml = withImg ? `<input type="file" class="hidden" id="f${id}" onchange="previewImg(this, 'img${id}')">
+
+            const imgHtml = withImg ? `
+                <input type="file" class="hidden" id="f${id}" onchange="previewImg(this, 'img${id}')">
                 <button class="btn-accent" style="margin-top:10px; font-size:0.7rem;" onclick="document.getElementById('f${id}').click()">SUBIR IMAGEN</button>
-                <img id="img${id}" class="img-preview hidden">` : '';
+                <img id="img${id}" class="img-preview hidden">
+            ` : '';
 
             document.getElementById(containerId).insertAdjacentHTML('beforeend', `
                 <div class="card animate__animated animate__zoomIn" id="card-${id}">
@@ -546,81 +701,121 @@
                     </div>
                     <div id="e${id}" class="rich-editor">Escribe aquí...</div>
                     ${imgHtml}
-                </div>`);
+                </div>
+            `);
         }
 
         function previewImg(input, tid) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = e => {
+
+                reader.onload = async e => {
                     const img = document.getElementById(tid);
                     img.src = e.target.result;
                     img.classList.remove('hidden');
+
+                    if (tid.startsWith("gal-img-")) {
+                        galeriaSemanas[tid] = e.target.result;
+                        await guardarGaleriaSemanas();
+                    }
                 };
+
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function toggleEdit(eid, tid, btn) {
-            const e = document.getElementById(eid); const t = document.getElementById(tid);
+        async function toggleEdit(eid, tid, btn) {
+            const e = document.getElementById(eid);
+            const t = document.getElementById(tid);
+
             const isEd = e.contentEditable === "true";
-            e.contentEditable = !isEd; t.contentEditable = !isEd;
+
+            e.contentEditable = !isEd;
+            t.contentEditable = !isEd;
             e.classList.toggle('editing');
+
             btn.innerText = isEd ? "EDITAR" : "GUARDAR";
 
-            if(isEd) {
-                if(eid === 'editor-recetas') {
-                    localStorage.setItem('botanica_receta_title', t.innerHTML);
-                    localStorage.setItem('botanica_receta_body', e.innerHTML);
-                }
-                if(eid === 'editor-polinizadores') {
-                    localStorage.setItem('botanica_polinizadores_title', t.innerHTML);
-                    localStorage.setItem('botanica_polinizadores_body', e.innerHTML);
+            if (isEd) {
+                try {
+                    if (eid === 'editor-recetas') {
+                        await api("/api/contenido/recetas", {
+                            method: "PUT",
+                            body: JSON.stringify({
+                                titulo: t.innerHTML,
+                                cuerpo: e.innerHTML
+                            })
+                        });
+                    }
+
+                    if (eid === 'editor-polinizadores') {
+                        await api("/api/contenido/polinizadores", {
+                            method: "PUT",
+                            body: JSON.stringify({
+                                titulo: t.innerHTML,
+                                cuerpo: e.innerHTML
+                            })
+                        });
+                    }
+
+                    alert("Contenido guardado en Neon.");
+                } catch (error) {
+                    console.error(error);
+                    alert("No se pudo guardar el contenido en Neon.");
                 }
             }
         }
 
-        // LÓGICA DE CÁLCULO DE IMC (PERSISTENTE Y SIN DUPLICADOS)
-        function calcIMC() {
+        async function calcIMC() {
             const p = parseFloat(document.getElementById('peso').value);
             const a = parseFloat(document.getElementById('altura').value);
-            if(!p || !a) return;
-            const imc = (p / (a*a)).toFixed(1);
-           
+
+            if (!p || !a) {
+                return alert("Ingresa peso y altura.");
+            }
+
+            const imc = (p / (a * a)).toFixed(1);
+
             let est = "";
             let sugerenciaHtml = "";
 
             if (imc < 18.5) {
                 est = "Bajo Peso";
-                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> Integra plantas tónicas y nutritivas a tu rutina diaria. Las infusiones de raíz de jengibre estimulan el apetito de manera saludable, mientras que la menta ayuda a mejorar los procesos de absorción de nutrientes en tu cuerpo. Procura balancear bien tus alimentos de siembra diaria.`;
+                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> Integra plantas tónicas y nutritivas a tu rutina diaria. Las infusiones de raíz de jengibre estimulan el apetito de manera saludable, mientras que la menta ayuda a mejorar los procesos de absorción de nutrientes en tu cuerpo. Procura balancear bien tus alimentos.`;
             } else if (imc < 25) {
                 est = "Normal";
-                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> ¡Excelente balance! Te sugerimos mantener tu estado consumiendo infusiones de Romero o Romero Verde, el cual aporta potentes antioxidantes naturales que cuidan tus células, mejoran tu enfoque en clase y mantienen el balance de tu metabolismo.`;
+                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> ¡Excelente balance! Te sugerimos mantener tu estado consumiendo infusiones de romero, agua natural y alimentos variados.`;
             } else {
                 est = "Sobrepeso";
-                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> Es una gran oportunidad para sumar aliados herbales. Recomendamos infusiones de té verde o de flores secas de hibisco (Jamaica) cosechadas en el huerto, ya que ayudan a depurar toxinas, poseen un efecto diurético suave y asisten al cuerpo en el procesamiento de grasas. Recuerda realizar actividad física regular.`;
+                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> Puedes sumar actividad física regular, agua natural e infusiones como té verde o jamaica como apoyo a buenos hábitos.`;
             }
 
             document.getElementById('imc-res').innerText = imc;
             document.getElementById('rec-box').innerHTML = sugerenciaHtml;
-           
-            const usuarioActual = session ? session.user : "Invitado Desconocido";
-            const indexExistente = db.imc.findIndex(i => i.user && i.user.toLowerCase() === usuarioActual.toLowerCase());
 
-            if (indexExistente !== -1) {
-                db.imc[indexExistente].date = new Date().toLocaleString();
-                db.imc[indexExistente].data = `${p}kg / ${a}m`;
-                db.imc[indexExistente].val = imc;
-                db.imc[indexExistente].est = est;
-            } else {
-                db.imc.push({ id: String(Date.now()), user: usuarioActual, date: new Date().toLocaleString(), data: `${p}kg / ${a}m`, val: imc, est: est });
+            const usuarioActual = session ? session.user : "Invitado";
+
+            try {
+                await api("/api/imc", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        usuario: usuarioActual,
+                        peso: p,
+                        altura: a,
+                        resultado: imc,
+                        estado: est
+                    })
+                });
+
+                await cargarDatosDesdeNeon();
+
+                alert("IMC guardado en Neon correctamente.");
+            } catch (error) {
+                console.error(error);
+                alert("No se pudo guardar el IMC en Neon.");
             }
-           
-            saveData();
-            alert("¡Tu cálculo de IMC se ha guardado/actualizado correctamente!");
         }
 
-        // RENDERIZAR TABLAS DE REGISTROS EN PANEL DE ADMINISTRADORA
         function renderRegistros() {
             document.querySelector('#table-imc tbody').innerHTML = db.imc.map(i => `
                 <tr>
@@ -629,9 +824,10 @@
                     <td>${i.data}</td>
                     <td>${i.val}</td>
                     <td>${i.est}</td>
-                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarIMC('${i.id || 0}', '${i.user || 'Invitado'}')">Borrar</button></td>
-                </tr>`).reverse().join('');
-           
+                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarIMC('${i.id}')">Borrar</button></td>
+                </tr>
+            `).join('');
+
             const admins = db.accesos.filter(a => a.role === 'admin');
             const users = db.accesos.filter(a => a.role === 'user');
 
@@ -640,44 +836,49 @@
                     <td>${a.user}</td>
                     <td class="pass-visible">${a.pass}</td>
                     <td>${a.date}</td>
-                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarAcceso(${a.id || 0}, '${a.user}', 'admin')">Borrar</button></td>
-                </tr>`).reverse().join('');
-               
+                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarAcceso(${a.id})">Borrar</button></td>
+                </tr>
+            `).join('');
+
             document.querySelector('#table-acc-user tbody').innerHTML = users.map(a => `
                 <tr>
                     <td>${a.user}</td>
                     <td class="pass-visible">${a.pass}</td>
                     <td>${a.date}</td>
-                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarAcceso(${a.id || 0}, '${a.user}', 'user')">Borrar</button></td>
-                </tr>`).reverse().join('');
+                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarAcceso(${a.id})">Borrar</button></td>
+                </tr>
+            `).join('');
         }
 
-        // FUNCIÓN CORREGIDA: BORRADO DE IMC EFECTIVO 100%
-        function borrarIMC(id, user) {
-            if(confirm(`¿Deseas eliminar permanentemente el historial de IMC de "${user}"?`)) {
-                // Forzamos conversión a string para evitar errores por tipos de datos diferentes (String vs Int)
-                db.imc = db.imc.filter(i => String(i.id) !== String(id) && i.user.toLowerCase() !== user.toLowerCase());
-                saveData();
-                renderRegistros();
-            }
-        }
-
-        function borrarAcceso(id, user, role) {
-            if(confirm(`¿Deseas eliminar permanentemente el registro de acceso de "${user}"?`)) {
-                if (id !== 0) {
-                    db.accesos = db.accesos.filter(a => a.id !== id);
-                } else {
-                    db.accesos = db.accesos.filter(a => !(a.user === user && a.role === role));
+        async function borrarIMC(id) {
+            if (confirm("¿Deseas eliminar este registro de IMC?")) {
+                try {
+                    await api("/api/imc/" + id, { method: "DELETE" });
+                    await cargarDatosDesdeNeon();
+                    renderRegistros();
+                } catch (error) {
+                    console.error(error);
+                    alert("No se pudo borrar el IMC.");
                 }
-                saveData();
-                renderRegistros();
             }
         }
 
-        function saveData() { localStorage.setItem('botanica_db', JSON.stringify(db)); }
-       
+        async function borrarAcceso(id) {
+            if (confirm("¿Deseas eliminar este registro de acceso?")) {
+                try {
+                    await api("/api/accesos/" + id, { method: "DELETE" });
+                    await cargarDatosDesdeNeon();
+                    renderRegistros();
+                } catch (error) {
+                    console.error(error);
+                    alert("No se pudo borrar el acceso.");
+                }
+            }
+        }
+
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
+
             if (document.body.classList.contains('light-mode')) {
                 localStorage.setItem('botanica_theme', 'light');
             } else {
@@ -685,20 +886,19 @@
             }
         }
 
-        /* --- CONTROL PERSISTENTE DE OPINIONES --- */
         function renderOpiniones() {
             const esAdmin = session && session.isAdmin;
             const claseOcultar = esAdmin ? "" : "hidden";
-           
+
             document.getElementById('lista-opiniones').innerHTML = opinionesData.map(o => `
                 <div class="opinion-item">
                     <p style="margin:0;"><b>${o.nombre}:</b> "${o.texto}"</p>
                     <button class="btn-danger admin-only ${claseOcultar}" style="padding: 2px 8px;" onclick="borrarOpinion(${o.id})">Borrar</button>
                 </div>
-            `).reverse().join('');
+            `).join('');
         }
 
-        function agregarOpinion() {
+        async function agregarOpinion() {
             const nombre = document.getElementById('alumno-nombre').value.trim();
             const opinion = document.getElementById('alumno-opinion').value.trim();
 
@@ -706,27 +906,45 @@
                 return alert("Por favor rellena tu nombre y escribe una opinión.");
             }
 
-            const nuevaOp = { id: Date.now(), nombre: nombre, texto: opinion };
-            opinionesData.push(nuevaOp);
-            localStorage.setItem('botanica_opiniones', JSON.stringify(opinionesData));
-           
-            document.getElementById('alumno-nombre').value = '';
-            document.getElementById('alumno-opinion').value = '';
-            renderOpiniones();
+            try {
+                await api("/api/comentarios", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        comentario: opinion
+                    })
+                });
+
+                document.getElementById('alumno-nombre').value = '';
+                document.getElementById('alumno-opinion').value = '';
+
+                await cargarDatosDesdeNeon();
+                renderOpiniones();
+
+            } catch (error) {
+                console.error(error);
+                alert("No se pudo guardar la opinión en Neon.");
+            }
         }
 
-        function borrarOpinion(id) {
-            opinionesData = opinionesData.filter(o => o.id !== id);
-            localStorage.setItem('botanica_opiniones', JSON.stringify(opinionesData));
-            renderOpiniones();
+        async function borrarOpinion(id) {
+            if (confirm("¿Deseas borrar esta opinión?")) {
+                try {
+                    await api("/api/comentarios/" + id, { method: "DELETE" });
+                    await cargarDatosDesdeNeon();
+                    renderOpiniones();
+                } catch (error) {
+                    console.error(error);
+                    alert("No se pudo borrar la opinión.");
+                }
+            }
         }
 
-        /* --- CONTROL PERSISTENTE DE FOTOS --- */
         function renderFotosUsuario() {
             const esAdmin = session && session.isAdmin;
             const claseOcultar = esAdmin ? "" : "hidden";
             const track2 = document.getElementById('gallery-track-2');
-           
+
             track2.innerHTML = fotosData.map(f => `
                 <div class="gallery-week-card" id="user-card-${f.id}">
                     <div class="plant-owner-tag">🌿 Planta de ${f.nombre}</div>
@@ -736,7 +954,7 @@
             `).join('');
         }
 
-        function agregarFotoUsuario() {
+        async function agregarFotoUsuario() {
             const nombreAlumno = document.getElementById('user-plant-name').value.trim();
             const inputFile = document.getElementById('user-plant-file');
 
@@ -745,102 +963,223 @@
             }
 
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const nuevaFoto = { id: String(Date.now()), nombre: nombreAlumno, src: e.target.result };
-                fotosData.push(nuevaFoto);
-                localStorage.setItem('botanica_fotos', JSON.stringify(fotosData));
-               
-                document.getElementById('user-plant-name').value = '';
-                inputFile.value = '';
-                renderFotosUsuario();
+
+            reader.onload = async function(e) {
+                try {
+                    await api("/api/fotos", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            nombre: nombreAlumno,
+                            imagen: e.target.result
+                        })
+                    });
+
+                    document.getElementById('user-plant-name').value = '';
+                    inputFile.value = '';
+
+                    await cargarDatosDesdeNeon();
+                    renderFotosUsuario();
+
+                } catch (error) {
+                    console.error(error);
+                    alert("No se pudo guardar la foto en Neon. Si la imagen es muy pesada, intenta con una más pequeña.");
+                }
             };
+
             reader.readAsDataURL(inputFile.files[0]);
         }
 
-        function borrarFotoUsuario(id) {
-            fotosData = fotosData.filter(f => f.id !== id);
-            localStorage.setItem('botanica_fotos', JSON.stringify(fotosData));
-            renderFotosUsuario();
+        async function borrarFotoUsuario(id) {
+            if (confirm("¿Deseas borrar esta foto?")) {
+                try {
+                    await api("/api/fotos/" + id, { method: "DELETE" });
+                    await cargarDatosDesdeNeon();
+                    renderFotosUsuario();
+                } catch (error) {
+                    console.error(error);
+                    alert("No se pudo borrar la foto.");
+                }
+            }
         }
 
-        /* --- LÓGICA DE DIAGRAMAS DE FLUJO INTERACTIVOS CON COLOR EDITABLE --- */
         function addFlowNode(type) {
             const canvas = document.getElementById('canvas-diagrama');
             const texto = prompt("Ingresa el texto para este bloque del proceso:", "Paso de Elaboración");
-            if(!texto) return;
 
-            const videoUrl = prompt("Pega el enlace del video explicativo para este paso (YouTube/Vimeo, etc.):", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-            if(!videoUrl) return;
+            if (!texto) return;
 
-            // Extraer el color seleccionado por el Administrador en la interfaz
+            const videoUrl = prompt("Pega el enlace del video explicativo para este paso:", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+
+            if (!videoUrl) return;
+
             const colorElegido = document.getElementById('node-color-picker').value;
 
             let claseEstilo = "node-proceso";
-            if(type === 'inicio') claseEstilo = "node-inicio";
-            if(type === 'decision') claseEstilo = "node-decision";
 
-            if(canvas.children.length > 0) {
+            if (type === 'inicio') claseEstilo = "node-inicio";
+            if (type === 'decision') claseEstilo = "node-decision";
+
+            if (canvas.children.length > 0) {
                 canvas.insertAdjacentHTML('beforeend', `<div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>`);
             }
 
-            // Aplicamos de forma dinámica el estilo de fondo inline `background: ${colorElegido}`
             const bloqueHtml = `
                 <div class="flow-node ${claseEstilo} animate__animated animate__fadeInDown" style="background: ${colorElegido};" onclick="playNodeVideo('${videoUrl}', '${texto}', event)">
                     ${texto.toUpperCase()}
                     <button class="btn-danger admin-only" style="border:none; background:none; color:white; font-weight:bold; cursor:pointer;" onclick="removeNode(this, event)">×</button>
-                </div>`;
-           
+                </div>
+            `;
+
             canvas.insertAdjacentHTML('beforeend', bloqueHtml);
-           
-            if(session && session.isAdmin) {
+
+            if (session && session.isAdmin) {
                 canvas.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
             }
         }
 
         function removeNode(btn, event) {
             event.stopPropagation();
+
             const nodo = btn.parentNode;
             const previo = nodo.previousElementSibling;
-            if(previo && previo.classList.contains('flow-arrow')) {
+
+            if (previo && previo.classList.contains('flow-arrow')) {
                 previo.remove();
-            } else if(nodo.nextElementSibling && nodo.nextElementSibling.classList.contains('flow-arrow')) {
+            } else if (nodo.nextElementSibling && nodo.nextElementSibling.classList.contains('flow-arrow')) {
                 nodo.nextElementSibling.remove();
             }
+
             nodo.remove();
         }
 
         function playNodeVideo(url, pasoNombre, event) {
-            if(event.target.tagName === 'BUTTON') return;
-            if(confirm(`¿Deseas abrir el video explicativo del estudiante para: "${pasoNombre}"?`)) {
+            if (event.target.tagName === 'BUTTON') return;
+
+            if (confirm(`¿Deseas abrir el video explicativo del estudiante para: "${pasoNombre}"?`)) {
                 window.open(url, '_blank');
             }
         }
 
         function clearFlowchart() {
-            if(confirm("¿Quieres borrar todo tu diagrama de flujo?")) {
+            if (confirm("¿Quieres borrar todo tu diagrama de flujo?")) {
                 document.getElementById('canvas-diagrama').innerHTML = '';
             }
         }
 
-        /* --- LÓGICA DE NAVEGACIÓN DE LOS CARRUSELES --- */
         function slideTrack(trackId, containerId, direction) {
             const track = document.getElementById(trackId);
             const container = document.getElementById(containerId);
             const cardWidth = 320;
-           
+
             const maxScroll = track.offsetWidth - container.offsetWidth;
-           
-            if(!scrollOffsets.hasOwnProperty(trackId)) {
+
+            if (!scrollOffsets.hasOwnProperty(trackId)) {
                 scrollOffsets[trackId] = 0;
             }
-           
+
             scrollOffsets[trackId] += direction * cardWidth;
-           
+
             if (scrollOffsets[trackId] < 0) scrollOffsets[trackId] = 0;
             if (maxScroll > 0 && scrollOffsets[trackId] > maxScroll) scrollOffsets[trackId] = maxScroll;
             if (maxScroll <= 0) scrollOffsets[trackId] = 0;
-           
+
             track.style.transform = `translateX(-${scrollOffsets[trackId]}px)`;
+        }
+
+        /* =========================
+           APIs EXTERNAS
+        ========================= */
+
+        async function cargarLavandaApi() {
+            const box = document.getElementById("api-lavanda");
+            box.innerHTML = "Cargando información sobre lavanda...";
+
+            try {
+                const res = await fetch("https://es.wikipedia.org/api/rest_v1/page/summary/Lavandula");
+                const data = await res.json();
+
+                box.innerHTML = `
+                    <h4>${data.title || "Lavanda"}</h4>
+                    <p>${data.extract || "No se encontró información."}</p>
+                    ${data.thumbnail ? `<img class="img-preview" src="${data.thumbnail.source}" style="max-width:220px;">` : ""}
+                `;
+            } catch (error) {
+                console.error(error);
+                box.innerHTML = "No se pudo cargar la API de lavanda.";
+            }
+        }
+
+        async function cargarNutricionApi() {
+            const termino = document.getElementById("nutri-search").value.trim() || "honey";
+            const box = document.getElementById("api-nutricion");
+            box.innerHTML = "Buscando información nutricional...";
+
+            try {
+                const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=5`);
+                const data = await res.json();
+
+                if (!data.products || data.products.length === 0) {
+                    box.innerHTML = "No se encontraron alimentos.";
+                    return;
+                }
+
+                box.innerHTML = data.products.map(prod => {
+                    const n = prod.nutriments || {};
+                    return `
+                        <div class="opinion-item" style="display:block;">
+                            <b>${prod.product_name || "Producto sin nombre"}</b>
+                            <p style="margin:5px 0;">Marca: ${prod.brands || "No disponible"}</p>
+                            <p style="margin:5px 0;">
+                                Energía: ${n["energy-kcal_100g"] || "N/D"} kcal por 100g<br>
+                                Azúcares: ${n.sugars_100g || "N/D"} g por 100g<br>
+                                Grasas: ${n.fat_100g || "N/D"} g por 100g<br>
+                                Proteínas: ${n.proteins_100g || "N/D"} g por 100g
+                            </p>
+                        </div>
+                    `;
+                }).join("");
+
+            } catch (error) {
+                console.error(error);
+                box.innerHTML = "No se pudo cargar la API de nutrición.";
+            }
+        }
+
+        async function cargarClimaApi() {
+            const ciudad = document.getElementById("clima-ciudad").value.trim() || "Celaya";
+            const box = document.getElementById("api-clima");
+            box.innerHTML = "Consultando clima...";
+
+            try {
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(ciudad)}&count=1&language=es&format=json`);
+                const geoData = await geoRes.json();
+
+                if (!geoData.results || geoData.results.length === 0) {
+                    box.innerHTML = "No se encontró la ciudad.";
+                    return;
+                }
+
+                const lugar = geoData.results[0];
+
+                const climaRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lugar.latitude}&longitude=${lugar.longitude}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&timezone=auto`);
+                const clima = await climaRes.json();
+                const actual = clima.current;
+
+                box.innerHTML = `
+                    <h4>${lugar.name}, ${lugar.country}</h4>
+                    <p>
+                        Temperatura: <b>${actual.temperature_2m} °C</b><br>
+                        Humedad: <b>${actual.relative_humidity_2m}%</b><br>
+                        Lluvia actual: <b>${actual.precipitation} mm</b><br>
+                        Viento: <b>${actual.wind_speed_10m} km/h</b>
+                    </p>
+                    <p><b>Consejo para plantas:</b> Si hay mucho calor o poca humedad, revisa que la lavanda tenga buen drenaje y riego moderado.</p>
+                `;
+
+            } catch (error) {
+                console.error(error);
+                box.innerHTML = "No se pudo cargar la API del clima.";
+            }
         }
     </script>
 </body>
