@@ -6,237 +6,252 @@ require("dotenv").config();
 
 const app = express();
 
-/* =========================
-   MIDDLEWARE
-========================= */
-
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
-// 👇 ESTO ES LO QUE TE FALTABA (HTML FRONTEND)
-app.use(express.static(path.join(__dirname, "public")));
-
-/* =========================
-   POSTGRES DB
-========================= */
+app.use(express.static(__dirname));
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: { rejectUnauthorized: false }
 });
 
-/* =========================
-   INICIO (HTML)
-========================= */
+async function crearTablas() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS accesos (
+      id SERIAL PRIMARY KEY,
+      usuario TEXT NOT NULL,
+      password TEXT,
+      role TEXT NOT NULL,
+      fecha TIMESTAMP DEFAULT NOW()
+    );
 
-// 👇 AHORA SÍ CARGA TU HTML
+    CREATE TABLE IF NOT EXISTS imc (
+      id SERIAL PRIMARY KEY,
+      usuario TEXT NOT NULL,
+      peso NUMERIC,
+      altura NUMERIC,
+      resultado NUMERIC,
+      estado TEXT,
+      fecha TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS comentarios (
+      id SERIAL PRIMARY KEY,
+      nombre TEXT NOT NULL,
+      comentario TEXT NOT NULL,
+      fecha TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS fotos (
+      id SERIAL PRIMARY KEY,
+      nombre TEXT NOT NULL,
+      imagen TEXT NOT NULL,
+      fecha TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS contenido (
+      clave TEXT PRIMARY KEY,
+      titulo TEXT,
+      cuerpo TEXT
+    );
+  `);
+
+  console.log("Tablas listas en Neon/Postgres");
+}
+
+crearTablas().catch(console.error);
+
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-/* =========================
-   USUARIOS
-========================= */
+app.get("/index2.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "index2.html"));
+});
 
-app.get("/usuarios", async (req, res) => {
+/* ACCESOS */
+
+app.get("/api/accesos", async (req, res) => {
   try {
-    const resultado = await pool.query(
-      "SELECT * FROM usuarios ORDER BY id DESC"
+    const result = await pool.query("SELECT * FROM accesos ORDER BY id DESC");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener accesos" });
+  }
+});
+
+app.post("/api/accesos", async (req, res) => {
+  try {
+    const { usuario, password, role } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO accesos (usuario, password, role)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [usuario, password, role]
     );
 
-    res.json(resultado.rows);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al obtener usuarios" });
+    res.status(500).json({ error: "Error al guardar acceso" });
   }
 });
 
-app.post("/usuarios", async (req, res) => {
+app.delete("/api/accesos/:id", async (req, res) => {
   try {
-    const { nombre, correo, password } = req.body;
+    await pool.query("DELETE FROM accesos WHERE id = $1", [req.params.id]);
+    res.json({ mensaje: "Acceso eliminado" });
+  } catch (error) {
+    res.status(500).json({ error: "Error al eliminar acceso" });
+  }
+});
 
-    const resultado = await pool.query(
-      `
-      INSERT INTO usuarios (nombre, correo, password)
-      VALUES ($1, $2, $3)
-      RETURNING *
-      `,
-      [nombre, correo, password]
+/* IMC */
+
+app.get("/api/imc", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM imc ORDER BY id DESC");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener IMC" });
+  }
+});
+
+app.post("/api/imc", async (req, res) => {
+  try {
+    const { usuario, peso, altura, resultado, estado } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO imc (usuario, peso, altura, resultado, estado)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [usuario, peso, altura, resultado, estado]
     );
 
-    res.status(201).json(resultado.rows[0]);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al crear usuario" });
+    res.status(500).json({ error: "Error al guardar IMC" });
   }
 });
 
-app.delete("/usuarios/:id", async (req, res) => {
+app.delete("/api/imc/:id", async (req, res) => {
   try {
-    await pool.query("DELETE FROM usuarios WHERE id = $1", [req.params.id]);
-
-    res.json({ mensaje: "Usuario eliminado" });
+    await pool.query("DELETE FROM imc WHERE id = $1", [req.params.id]);
+    res.json({ mensaje: "IMC eliminado" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al eliminar usuario" });
+    res.status(500).json({ error: "Error al eliminar IMC" });
   }
 });
 
-/* =========================
-   RECETAS
-========================= */
+/* COMENTARIOS / OPINIONES */
 
-app.get("/recetas", async (req, res) => {
+app.get("/api/comentarios", async (req, res) => {
   try {
-    const resultado = await pool.query(
-      "SELECT * FROM recetas ORDER BY id DESC"
-    );
-
-    res.json(resultado.rows);
+    const result = await pool.query("SELECT * FROM comentarios ORDER BY id DESC");
+    res.json(result.rows);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al obtener recetas" });
-  }
-});
-
-app.post("/recetas", async (req, res) => {
-  try {
-    const { nombre, ingredientes, pasos, beneficios, imagen } = req.body;
-
-    const resultado = await pool.query(
-      `
-      INSERT INTO recetas
-      (nombre, ingredientes, pasos, beneficios, imagen)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-      `,
-      [nombre, ingredientes, pasos, beneficios, imagen]
-    );
-
-    res.status(201).json(resultado.rows[0]);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al crear receta" });
-  }
-});
-
-app.delete("/recetas/:id", async (req, res) => {
-  try {
-    await pool.query("DELETE FROM recetas WHERE id = $1", [req.params.id]);
-
-    res.json({ mensaje: "Receta eliminada" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al eliminar receta" });
-  }
-});
-
-/* =========================
-   COMENTARIOS
-========================= */
-
-app.get("/comentarios", async (req, res) => {
-  try {
-    const resultado = await pool.query(
-      "SELECT * FROM comentarios ORDER BY id DESC"
-    );
-
-    res.json(resultado.rows);
-  } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Error al obtener comentarios" });
   }
 });
 
-app.post("/comentarios", async (req, res) => {
+app.post("/api/comentarios", async (req, res) => {
   try {
     const { nombre, comentario } = req.body;
 
-    const resultado = await pool.query(
-      `
-      INSERT INTO comentarios (nombre, comentario)
-      VALUES ($1, $2)
-      RETURNING *
-      `,
+    const result = await pool.query(
+      `INSERT INTO comentarios (nombre, comentario)
+       VALUES ($1, $2)
+       RETURNING *`,
       [nombre, comentario]
     );
 
-    res.status(201).json(resultado.rows[0]);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Error al guardar comentario" });
   }
 });
 
-app.delete("/comentarios/:id", async (req, res) => {
+app.delete("/api/comentarios/:id", async (req, res) => {
   try {
-    await pool.query("DELETE FROM comentarios WHERE id = $1", [
-      req.params.id
-    ]);
-
+    await pool.query("DELETE FROM comentarios WHERE id = $1", [req.params.id]);
     res.json({ mensaje: "Comentario eliminado" });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Error al eliminar comentario" });
   }
 });
 
-/* =========================
-   POLINIZADORES
-========================= */
+/* FOTOS */
 
-app.get("/polinizadores", async (req, res) => {
+app.get("/api/fotos", async (req, res) => {
   try {
-    const resultado = await pool.query(
-      "SELECT * FROM polinizadores ORDER BY id DESC"
+    const result = await pool.query("SELECT * FROM fotos ORDER BY id DESC");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener fotos" });
+  }
+});
+
+app.post("/api/fotos", async (req, res) => {
+  try {
+    const { nombre, imagen } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO fotos (nombre, imagen)
+       VALUES ($1, $2)
+       RETURNING *`,
+      [nombre, imagen]
     );
 
-    res.json(resultado.rows);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al obtener polinizadores" });
+    res.status(500).json({ error: "Error al guardar foto" });
   }
 });
 
-app.post("/polinizadores", async (req, res) => {
+app.delete("/api/fotos/:id", async (req, res) => {
   try {
-    const { nombre, descripcion, importancia } = req.body;
+    await pool.query("DELETE FROM fotos WHERE id = $1", [req.params.id]);
+    res.json({ mensaje: "Foto eliminada" });
+  } catch (error) {
+    res.status(500).json({ error: "Error al eliminar foto" });
+  }
+});
 
-    const resultado = await pool.query(
-      `
-      INSERT INTO polinizadores
-      (nombre, descripcion, importancia)
-      VALUES ($1, $2, $3)
-      RETURNING *
-      `,
-      [nombre, descripcion, importancia]
+/* CONTENIDO EDITABLE */
+
+app.get("/api/contenido/:clave", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM contenido WHERE clave = $1",
+      [req.params.clave]
     );
 
-    res.status(201).json(resultado.rows[0]);
+    res.json(result.rows[0] || null);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al crear polinizador" });
+    res.status(500).json({ error: "Error al obtener contenido" });
   }
 });
 
-app.delete("/polinizadores/:id", async (req, res) => {
+app.put("/api/contenido/:clave", async (req, res) => {
   try {
-    await pool.query("DELETE FROM polinizadores WHERE id = $1", [
-      req.params.id
-    ]);
+    const { titulo, cuerpo } = req.body;
 
-    res.json({ mensaje: "Polinizador eliminado" });
+    const result = await pool.query(
+      `INSERT INTO contenido (clave, titulo, cuerpo)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (clave)
+       DO UPDATE SET titulo = EXCLUDED.titulo, cuerpo = EXCLUDED.cuerpo
+       RETURNING *`,
+      [req.params.clave, titulo, cuerpo]
+    );
+
+    res.json(result.rows[0]);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al eliminar polinizador" });
+    res.status(500).json({ error: "Error al guardar contenido" });
   }
 });
-
-/* =========================
-   SERVIDOR
-========================= */
 
 const PORT = process.env.PORT || 3000;
 
