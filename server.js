@@ -1,13 +1,24 @@
-
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
 
+/* =========================
+   MIDDLEWARE
+========================= */
+
 app.use(cors());
 app.use(express.json());
+
+// 👇 ESTO ES LO QUE TE FALTABA (HTML FRONTEND)
+app.use(express.static(path.join(__dirname, "public")));
+
+/* =========================
+   POSTGRES DB
+========================= */
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -17,20 +28,18 @@ const pool = new Pool({
 });
 
 /* =========================
-   INICIO
+   INICIO (HTML)
 ========================= */
 
+// 👇 AHORA SÍ CARGA TU HTML
 app.get("/", (req, res) => {
-  res.json({
-    mensaje: "API BotanicaPro funcionando correctamente"
-  });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 /* =========================
    USUARIOS
 ========================= */
 
-// Obtener usuarios
 app.get("/usuarios", async (req, res) => {
   try {
     const resultado = await pool.query(
@@ -38,26 +47,19 @@ app.get("/usuarios", async (req, res) => {
     );
 
     res.json(resultado.rows);
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      error: "Error al obtener usuarios"
-    });
+    res.status(500).json({ error: "Error al obtener usuarios" });
   }
 });
 
-// Crear usuario
 app.post("/usuarios", async (req, res) => {
-
   try {
-
     const { nombre, correo, password } = req.body;
 
     const resultado = await pool.query(
       `
-      INSERT INTO usuarios
-      (nombre, correo, password)
+      INSERT INTO usuarios (nombre, correo, password)
       VALUES ($1, $2, $3)
       RETURNING *
       `,
@@ -65,84 +67,43 @@ app.post("/usuarios", async (req, res) => {
     );
 
     res.status(201).json(resultado.rows[0]);
-
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al crear usuario"
-    });
-
+    res.status(500).json({ error: "Error al crear usuario" });
   }
-
 });
 
-// Eliminar usuario
 app.delete("/usuarios/:id", async (req, res) => {
-
   try {
+    await pool.query("DELETE FROM usuarios WHERE id = $1", [req.params.id]);
 
-    await pool.query(
-      "DELETE FROM usuarios WHERE id = $1",
-      [req.params.id]
-    );
-
-    res.json({
-      mensaje: "Usuario eliminado"
-    });
-
+    res.json({ mensaje: "Usuario eliminado" });
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al eliminar usuario"
-    });
-
+    res.status(500).json({ error: "Error al eliminar usuario" });
   }
-
 });
 
 /* =========================
    RECETAS
 ========================= */
 
-// Obtener recetas
 app.get("/recetas", async (req, res) => {
-
   try {
-
     const resultado = await pool.query(
       "SELECT * FROM recetas ORDER BY id DESC"
     );
 
     res.json(resultado.rows);
-
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al obtener recetas"
-    });
-
+    res.status(500).json({ error: "Error al obtener recetas" });
   }
-
 });
 
-// Crear receta
 app.post("/recetas", async (req, res) => {
-
   try {
-
-    const {
-      nombre,
-      ingredientes,
-      pasos,
-      beneficios,
-      imagen
-    } = req.body;
+    const { nombre, ingredientes, pasos, beneficios, imagen } = req.body;
 
     const resultado = await pool.query(
       `
@@ -151,93 +112,51 @@ app.post("/recetas", async (req, res) => {
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
       `,
-      [
-        nombre,
-        ingredientes,
-        pasos,
-        beneficios,
-        imagen
-      ]
+      [nombre, ingredientes, pasos, beneficios, imagen]
     );
 
     res.status(201).json(resultado.rows[0]);
-
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al crear receta"
-    });
-
+    res.status(500).json({ error: "Error al crear receta" });
   }
-
 });
 
-// Eliminar receta
 app.delete("/recetas/:id", async (req, res) => {
-
   try {
+    await pool.query("DELETE FROM recetas WHERE id = $1", [req.params.id]);
 
-    await pool.query(
-      "DELETE FROM recetas WHERE id = $1",
-      [req.params.id]
-    );
-
-    res.json({
-      mensaje: "Receta eliminada"
-    });
-
+    res.json({ mensaje: "Receta eliminada" });
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al eliminar receta"
-    });
-
+    res.status(500).json({ error: "Error al eliminar receta" });
   }
-
 });
 
 /* =========================
    COMENTARIOS
 ========================= */
 
-// Obtener comentarios
 app.get("/comentarios", async (req, res) => {
-
   try {
-
     const resultado = await pool.query(
       "SELECT * FROM comentarios ORDER BY id DESC"
     );
 
     res.json(resultado.rows);
-
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al obtener comentarios"
-    });
-
+    res.status(500).json({ error: "Error al obtener comentarios" });
   }
-
 });
 
-// Crear comentario
 app.post("/comentarios", async (req, res) => {
-
   try {
-
     const { nombre, comentario } = req.body;
 
     const resultado = await pool.query(
       `
-      INSERT INTO comentarios
-      (nombre, comentario)
+      INSERT INTO comentarios (nombre, comentario)
       VALUES ($1, $2)
       RETURNING *
       `,
@@ -245,82 +164,45 @@ app.post("/comentarios", async (req, res) => {
     );
 
     res.status(201).json(resultado.rows[0]);
-
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al guardar comentario"
-    });
-
+    res.status(500).json({ error: "Error al guardar comentario" });
   }
-
 });
 
-// Eliminar comentario
 app.delete("/comentarios/:id", async (req, res) => {
-
   try {
+    await pool.query("DELETE FROM comentarios WHERE id = $1", [
+      req.params.id
+    ]);
 
-    await pool.query(
-      "DELETE FROM comentarios WHERE id = $1",
-      [req.params.id]
-    );
-
-    res.json({
-      mensaje: "Comentario eliminado"
-    });
-
+    res.json({ mensaje: "Comentario eliminado" });
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al eliminar comentario"
-    });
-
+    res.status(500).json({ error: "Error al eliminar comentario" });
   }
-
 });
 
 /* =========================
    POLINIZADORES
 ========================= */
 
-// Obtener polinizadores
 app.get("/polinizadores", async (req, res) => {
-
   try {
-
     const resultado = await pool.query(
       "SELECT * FROM polinizadores ORDER BY id DESC"
     );
 
     res.json(resultado.rows);
-
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al obtener polinizadores"
-    });
-
+    res.status(500).json({ error: "Error al obtener polinizadores" });
   }
-
 });
 
-// Crear polinizador
 app.post("/polinizadores", async (req, res) => {
-
   try {
-
-    const {
-      nombre,
-      descripcion,
-      importancia
-    } = req.body;
+    const { nombre, descripcion, importancia } = req.body;
 
     const resultado = await pool.query(
       `
@@ -329,51 +211,27 @@ app.post("/polinizadores", async (req, res) => {
       VALUES ($1, $2, $3)
       RETURNING *
       `,
-      [
-        nombre,
-        descripcion,
-        importancia
-      ]
+      [nombre, descripcion, importancia]
     );
 
     res.status(201).json(resultado.rows[0]);
-
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al crear polinizador"
-    });
-
+    res.status(500).json({ error: "Error al crear polinizador" });
   }
-
 });
 
-// Eliminar polinizador
 app.delete("/polinizadores/:id", async (req, res) => {
-
   try {
+    await pool.query("DELETE FROM polinizadores WHERE id = $1", [
+      req.params.id
+    ]);
 
-    await pool.query(
-      "DELETE FROM polinizadores WHERE id = $1",
-      [req.params.id]
-    );
-
-    res.json({
-      mensaje: "Polinizador eliminado"
-    });
-
+    res.json({ mensaje: "Polinizador eliminado" });
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({
-      error: "Error al eliminar polinizador"
-    });
-
+    res.status(500).json({ error: "Error al eliminar polinizador" });
   }
-
 });
 
 /* =========================
@@ -385,8 +243,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor iniciado en puerto ${PORT}`);
 });
-
-
-
-
-
