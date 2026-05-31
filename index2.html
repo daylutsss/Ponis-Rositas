@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Botánica Pro | Sistema Integral</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   
+    <style>
+        :root {
+            /* === MODO OSCURO (Default) === */
+            --bg: #DCD189;
+            --sidebar: #4C0004;
+            --card: #AFA231;
+            --accent: #ff9100;
+            --border: #30363d;
+            --danger: #ff4444;
+
+            /* === VARIABLES DE TIPOGRAFÍA POR OBJETO === */
+            --font-global: 'Plus Jakarta Sans', sans-serif;
+            --font-polinizadores: 'Plus Jakarta Sans', sans-serif;
+            --font-diagramas: 'Plus Jakarta Sans', sans-serif;
+            --font-carruseles: 'Plus Jakarta Sans', sans-serif;
+            --font-recetas: 'Plus Jakarta Sans', sans-serif;
+            --font-salud: 'Plus Jakarta Sans', sans-serif;
+
+            /* === VARIABLES DE COLOR DE TEXTO MODO OSCURO === */
+            --text-titles: #314e00;    
+            --text-main: #fbe9c5;      
+            --text-dim: #8b949e;        
+
+            /* Colores específicos para Polinizadores */
+            --text-polinizadores-title: #314e00;
+            --text-polinizadores-body: #fbe9c5;
+           
+            /* Variables de Campos e Inputs */
+            --input-bg: #090b0e;        
+            --input-text: #e6edf3;      
+        }
+
+        .light-mode {
+            /* === MODO CLARO PERSONALIZADO === */
+            --bg: #242810;            
+            --sidebar: #060409;        
+            --card: #768340;          
+            --border: #dce0e5;
+            --accent: #768340;
+
+            /* === VARIABLES DE COLOR DE TEXTO MODO CLARO === */
+            --text-titles: #000000;    
+            --text-main: #3d4a26;      
+            --text-dim: #65676b;      
+
+            /* Colores específicos para Polinizadores en Claro */
+            --text-polinizadores-title: #2d361e;
+            --text-polinizadores-body: #3d4a26;
+
+            --input-bg: #ffffff;      
+            --input-text: #3d4a26;    
+        }
+
+        body {
+            font-family: var(--font-global);
+            background-color: var(--bg); color: var(--text-main);
+            margin: 0; display: flex; min-height: 100vh; transition: 0.3s;
+        }
+
+        /* --- ASIGNACIÓN DE TIPOGRAFÍAS Y COLORES INDEPENDIENTES --- */
+        #card-polinizadores h3 { font-family: var(--font-polinizadores) !important; color: var(--text-polinizadores-title) !important; }
+        #card-polinizadores .rich-editor { font-family: var(--font-polinizadores) !important; color: var(--text-polinizadores-body) !important; }
+
+        #card-diagrams-main { font-family: var(--font-diagramas) !important; }
+        #card-gal-1, #card-gal-2, .gallery-week-card { font-family: var(--font-carruseles) !important; }
+        #card-recetas-1, #card-recetas-opiniones { font-family: var(--font-recetas) !important; }
+        #card-salud-imc, #card-salud-rec { font-family: var(--font-salud) !important; }
+
+        h1, h2, h3, .editable-title { color: var(--text-titles) !important; }
+        p, .rich-editor, div, td { color: var(--text-main); }
+        span, th { color: var(--text-dim); }
+
+        /* --- INPUTS DE DATOS --- */
+        .input-std {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--input-bg);
+            border: 2px solid var(--border);
+            color: var(--input-text) !important;
+            box-sizing: border-box;
+            font-family: inherit;
+            transition: 0.3s;
+        }
+        .input-std::placeholder {
+            color: var(--text-dim);
+            opacity: 0.7;
+        }
+        .input-std:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        /* --- LOGIN --- */
+        #login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .login-card { background: var(--card); padding: 40px; border-radius: 25px; border: 1px solid var(--border); width: 350px; text-align: center; }
+        .input-group { position: relative; margin: 8px 0; }
+        .eye-login { position: absolute; right: 12px; top: 12px; cursor: pointer; color: var(--text-dim); z-index: 10; }
+
+        /* --- UI COMPONENTES --- */
+        .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 2rem 1rem; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar div { color: var(--accent) !important; }
+        .nav-btn { background: transparent; color: var(--text-dim); border: none; padding: 12px 15px; text-align: left; border-radius: 12px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 5px; font-family: inherit; }
+        .nav-btn.active { background: rgba(255, 145, 0, 0.1); color: var(--accent); }
+
+        .main-content { flex: 1; padding: 2rem; overflow-y: auto; position: relative; }
+        .card { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 20px; margin-bottom: 1.5rem; position: relative; transition: background-color 0.3s; }
+       
+        .btn-accent { background: var(--accent); border: none; color: white; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; }
+        .btn-danger { background: rgba(255, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); padding: 6px 14px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
+       
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .rich-editor { min-height: 40px; outline: none; margin-top: 10px; }
+        .editing { border: 1px dashed var(--accent); padding: 5px; border-radius: 5px; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th { text-align: left; padding: 12px; color: var(--accent) !important; border-bottom: 2px solid var(--border); font-size: 0.8rem; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .pass-visible { font-family: monospace; color: var(--accent); font-weight: bold; }
+
+        .img-preview { max-width: 100%; border-radius: 10px; margin-top: 10px; border: 1px solid var(--border); object-fit: cover; }
+        .theme-toggle { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 1.4rem; color: var(--accent); }
+        .hidden { display: none !important; }
+
+        .opinion-item { border-bottom: 1px dashed var(--border); padding: 10px 0; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .opinion-item:last-child { border-bottom: none; }
+
+        /* --- ESTILOS COMPONENTES DIAGRAMAS --- */
+        .flowchart-canvas { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; background: rgba(0,0,0,0.05); border-radius: 15px; min-height: 200px; margin-top: 15px; }
+        .flow-node { padding: 12px 20px; min-width: 150px; text-align: center; font-weight: bold; color: #ffffff !important; position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform 0.2s; border-radius: 8px; }
+        .flow-node:hover { transform: scale(1.04); }
+        .node-inicio, .node-fin { border-radius: 50px; }
+        .node-decision { transform: rotate(0deg); border-radius: 4px; }
+        .flow-arrow { color: var(--accent); font-size: 1.5rem; text-align: center; margin: -5px 0; }
+
+        /* --- ESTILOS EXCLUSIVOS PARA LOS CARRUSELES EN TIRA --- */
+        .gallery-wrapper { display: flex; align-items: center; gap: 15px; width: 100%; margin-top: 20px; position: relative; }
+        .gallery-arrow-btn { background: var(--accent); color: white; border: none; width: 45px; height: 45px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s; }
+        .gallery-arrow-btn:hover { transform: scale(1.1); opacity: 0.9; }
+        .gallery-timeline-container { flex: 1; overflow: hidden; position: relative; padding: 10px 0; }
+        .gallery-track { display: flex; gap: 20px; transition: transform 0.4s ease-in-out; width: max-content; }
+        .gallery-week-card { width: 300px; background: var(--sidebar); border: 1px solid var(--border); border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; flex-shrink: 0; transition: background-color 0.3s; position: relative; }
+        .gallery-week-card h4 { margin: 0; color: #ffffff !important; font-size: 0.95rem; text-align: center; }
+       
+        .plant-owner-tag { background: rgba(255, 145, 0, 0.2); color: var(--accent); padding: 5px; text-align: center; font-weight: bold; border-radius: 8px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-card animate__animated animate__fadeInDown">
+            <h2 style="color: var(--accent); margin-bottom: 20px;">🌿 BOTÁNICA PRO</h2>
+            <input type="text" id="user-in" class="input-std" style="margin-bottom:8px" placeholder="Usuario">
+           
+            <div class="input-group">
+                <input type="password" id="pass-in" class="input-std" placeholder="Contraseña">
+                <i class="fa-solid fa-eye eye-login" onclick="togglePass('pass-in', this)"></i>
+            </div>
+
+            <select id="role-in" class="input-std" style="margin: 8px 0;">
+                <option value="admin">Administradora</option>
+                <option value="user">Invitado</option>
+            </select>
+
+            <div class="input-group">
+                <input type="password" id="master-key" class="input-std" placeholder="CLAVE MAESTRA">
+                <i class="fa-solid fa-eye eye-login" onclick="togglePass('master-key', this)"></i>
+            </div>
+
+            <button onclick="login()" class="btn-accent" style="width:100%; justify-content:center; margin-top:15px;">ENTRAR</button>
+        </div>
+    </div>
+
+    <aside class="sidebar">
+        <div style="color: var(--accent); font-weight: 800; margin-bottom: 2rem; font-size: 1.3rem;"><i class="fa-solid fa-leaf"></i> BOTÁNICA PRO</div>
+        <nav>
+            <button id="btn-tab-inicio" class="nav-btn active" onclick="showTab('inicio', this)"><i class="fa-solid fa-house"></i> Inicio</button>
+            <button id="btn-tab-bitacora" class="nav-btn" onclick="showTab('bitacora', this)"><i class="fa-solid fa-book"></i> Bitácora</button>
+            <button id="btn-tab-diagramas" class="nav-btn" onclick="showTab('diagramas', this)"><i class="fa-solid fa-diagram-project"></i> Diagramas de Flujo</button>
+            <button id="btn-tab-galeria" class="nav-btn" onclick="showTab('galeria', this)"><i class="fa-solid fa-images"></i> Galería de Hitos</button>
+            <button id="btn-tab-recetas" class="nav-btn" onclick="showTab('recetas', this)"><i class="fa-solid fa-mortar-pestle"></i> Recetas e Hitos</button>
+            <button id="btn-tab-cronograma" class="nav-btn" onclick="showTab('cronograma', this)"><i class="fa-solid fa-calendar-alt"></i> Cronograma</button>
+            <button id="btn-tab-salud" class="nav-btn" onclick="showTab('salud', this)"><i class="fa-solid fa-heart-pulse"></i> Salud</button>
+            <button id="btn-tab-registros" class="nav-btn admin-only hidden" onclick="showTab('registros', this)"><i class="fa-solid fa-folder-open"></i> Registros</button>
+        </nav>
+        <button class="btn-accent" style="margin-top:auto; background:var(--danger);" onclick="logout()">CERRAR SESIÓN</button>
+    </aside>
+
+    <main class="main-content">
+        <div class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></div>
+        <header style="margin-bottom: 20px;">
+            <h1 id="welcome-txt" style="margin:0;">Bienvenida</h1>
+            <span id="badge-admin" class="hidden" style="color:var(--danger); font-weight:bold; font-size:0.8rem;">[ MODO ADMINISTRADORA ]</span>
+        </header>
+
+        <div id="tab-inicio" class="tab-pane">
+            <div class="admin-only hidden" style="margin-bottom:20px;"><button class="btn-accent" onclick="addBox('grid-inicio', true)">+ NUEVO PANEL CON IMAGEN</button></div>
+            <div id="grid-inicio" class="grid-2">
+                <div class="card" id="card-polinizadores">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 id="title-polinizadores" class="editable-title">Polinizadores y su Relación con el Jardín Escolar</h3>
+                        <div class="admin-only hidden">
+                            <button class="btn-accent" onclick="toggleEdit('editor-polinizadores','title-polinizadores',this)">EDITAR</button>
+                        </div>
+                    </div>
+                    <div id="editor-polinizadores" class="rich-editor">Los polinizadores (como abejas, mariposas, abejorros y colibríes) son los aliados más importantes de nuestro jardín escolar. Al alimentarse del néctar, transportan involuntariamente el polen de una flor a otra, logrando la fertilización de las plantas. Sin ellos, la mayoría de nuestros cultivos pedagógicos no podrían generar semillas ni reproducirse, rompiendo el equilibrio del huerto.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-bitacora" class="tab-pane hidden">
+            <div class="admin-only hidden" style="margin-bottom:20px;"><button class="btn-accent" onclick="addBox('grid-bitacora', true)">+ NUEVO PANEL CON IMAGEN</button></div>
+            <div id="grid-bitacora" class="grid-2"></div>
+        </div>
+
+        <div id="tab-diagramas" class="tab-pane hidden">
+            <div class="card" id="card-diagrams-main">
+                <h3>Diagramas de flujo</h3>
+                <p>Los siguientes diagramas de flujo representan el proceso que llevamos acabo para realizar los productos.<b>Si tienes alguna duda puedes hacer click sobre el proceso que no entiendas y te enviera a un video el cual te mostrara el proceso</b></p>
+               
+                <div class="admin-only hidden" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; align-items:center;">
+                    <button class="btn-accent" style="background:#2e7d32;" onclick="addFlowNode('inicio')">+ Inicio / Fin</button>
+                    <button class="btn-accent" style="background:#1565c0;" onclick="addFlowNode('proceso')">+ Acción / Proceso</button>
+                    <button class="btn-accent" style="background:#ad1457;" onclick="addFlowNode('decision')">+ Decisión / Condición</button>
+                   
+                    <span style="margin-left: 15px; font-size: 0.85rem;">Color de Pieza:</span>
+                    <input type="color" id="node-color-picker" value="#1565c0" style="border:none; width:40px; height:35px; cursor:pointer; background:transparent;">
+                   
+                    <button class="btn-accent" style="background:var(--danger); margin-left:auto;" onclick="clearFlowchart()">Limpiar Todo</button>
+                </div>
+
+                <div id="canvas-diagrama" class="flowchart-canvas">
+                    <div class="flow-node node-inicio" style="background: #2e7d32;" onclick="playNodeVideo('https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'Recolectar Lavanda', event)">
+                        INICIO: Recolectar Lavanda
+                        <button class="btn-danger admin-only hidden" style="border:none; background:none; color:white; cursor:pointer;" onclick="removeNode(this, event)">×</button>
+                    </div>
+                    <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                    <div class="flow-node node-proceso" style="background: #1565c0;" onclick="playNodeVideo('https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'Dejar secar por 2 semanas', event)">
+                        Paso 1: Dejar secar por 2 semanas
+                        <button class="btn-danger admin-only hidden" style="border:none; background:none; color:white; cursor:pointer;" onclick="removeNode(this, event)">×</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-galeria" class="tab-pane hidden">
+            <div class="card" style="margin-bottom: 2rem;" id="card-gal-1">
+                <h3>Galería (8 Semanas de Trabajo)</h3>
+                <p>Estas son evidencias de nuestro trabajo por 8 semanas, donde te mostramos como cuidamos la lavanda y como realizamos los productos.</p>
+               
+                <div class="gallery-wrapper">
+                    <button class="gallery-arrow-btn" onclick="slideTrack('gallery-track-1', 'gallery-container-1', -1)"><i class="fa-solid fa-chevron-left"></i></button>
+                   
+                    <div class="gallery-timeline-container" id="gallery-container-1">
+                        <div class="gallery-track" id="gallery-track-1" style="transform: translateX(0px);">
+                           
+                            <div class="gallery-week-card" id="week-card-1">
+                                <h4>Semana 1</h4>
+                                <input type="file" accept="image/*" class="input-std" onchange="previewImg(this, 'gal-img-1')">
+                                <img id="gal-img-1" class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23333'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-size='10'>Bitácora S1</text></svg>">
+                            </div>
+
+                            <div class="gallery-week-card" id="week-card-2">
+                                <h4>Semana 2:</h4>
+                                <input type="file" accept="image/*" class="input-std" onchange="previewImg(this, 'gal-img-2')">
+                                <img id="gal-img-2" class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23333'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-size='10'>Bitácora S2</text></svg>">
+                            </div>
+
+                            <div class="gallery-week-card" id="week-card-3">
+                                <h4>Semana 3:</h4>
+                                <input type="file" accept="image/*" class="input-std" onchange="previewImg(this, 'gal-img-3')">
+                                <img id="gal-img-3" class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23333'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-size='10'>Bitácora S3</text></svg>">
+                            </div>
+
+                            <div class="gallery-week-card" id="week-card-4">
+                                <h4>Semana 4:</h4>
+                                <input type="file" accept="image/*" class="input-std" onchange="previewImg(this, 'gal-img-4')">
+                                <img id="gal-img-4" class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23333'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-size='10'>Bitácora S4</text></svg>">
+                            </div>
+
+                            <div class="gallery-week-card" id="week-card-5">
+                                <h4>Semana 5:</h4>
+                                <input type="file" accept="image/*" class="input-std" onchange="previewImg(this, 'gal-img-5')">
+                                <img id="gal-img-5" class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23333'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-size='10'>Bitácora S5</text></svg>">
+                            </div>
+
+                            <div class="gallery-week-card" id="week-card-6">
+                                <h4>Semana 6:</h4>
+                                <input type="file" accept="image/*" class="input-std" onchange="previewImg(this, 'gal-img-6')">
+                                <img id="gal-img-6" class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23333'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-size='10'>Bitácora S6</text></svg>">
+                            </div>
+
+                            <div class="gallery-week-card" id="week-card-7">
+                                <h4>Semana 7:</h4>
+                                <input type="file" accept="image/*" class="input-std" onchange="previewImg(this, 'gal-img-7')">
+                                <img id="gal-img-7" class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23333'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-size='10'>Bitácora S7</text></svg>">
+                            </div>
+
+                            <div class="gallery-week-card" id="week-card-8">
+                                <h4>Semana 8:</h4>
+                                <input type="file" accept="image/*" class="input-std" onchange="previewImg(this, 'gal-img-8')">
+                                <img id="gal-img-8" class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23333'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-size='10'>Bitácora S8</text></svg>">
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <button class="gallery-arrow-btn" onclick="slideTrack('gallery-track-1', 'gallery-container-1', 1)"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="card" id="card-gal-2">
+                <h3>¡Comparte tu propia Plantita!</h3>
+                <p>En el siguiente espacio puedes subir una foto de tu plantita!</p>
+               
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-bottom: 20px; align-items: center;">
+                    <input type="text" id="user-plant-name" class="input-std" placeholder="Tu nombre y grupo:">
+                    <input type="file" id="user-plant-file" accept="image/*" class="input-std">
+                    <button class="btn-accent" onclick="agregarFotoUsuario()"><i class="fa-solid fa-plus"></i> SUBIR FOTO</button>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+
+                <div class="gallery-wrapper">
+                    <button class="gallery-arrow-btn" onclick="slideTrack('gallery-track-2', 'gallery-container-2', -1)"><i class="fa-solid fa-chevron-left"></i></button>
+                   
+                    <div class="gallery-timeline-container" id="gallery-container-2">
+                        <div class="gallery-track" id="gallery-track-2" style="transform: translateX(0px);">
+                            </div>
+                    </div>
+
+                    <button class="gallery-arrow-btn" onclick="slideTrack('gallery-track-2', 'gallery-container-2', 1)"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-recetas" class="tab-pane hidden">
+            <div class="card" id="card-recetas-1">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 id="title-recetas" class="editable-title">RECETAS</h3>
+                    <div class="admin-only hidden">
+                        <button class="btn-accent" onclick="toggleEdit('editor-recetas','title-recetas',this)">EDITAR</button>
+                    </div>
+                </div>
+                <div id="editor-recetas" class="rich-editor">
+                    <p><b>Ingredientes:</b><br>- 2 cucharaditas de flores secas de lavanda culinaria.<br>- 1 taza de agua purificada.<br>- 1 cucharada de miel de abeja u opción vegetal.</p>
+                    <p><b>Pasos para su preparación:</b><br>1. Pon a hervir el agua limpia en una olla pequeña.<br>2. Al soltar el hervor, apaga el fuego y añade las flores de lavanda.<br>3. Deja reposar la infusión tapada durante 5 minutos para conceptualizar sus propiedades.<br>4. Cuela el líquido en una taza, agrega la miel al gusto y consúmela tibia.</p>
+                    <p><b>Beneficios:</b> Excelente remedio natural para calmar el estrés diario, reducir dolores de cabeza leves, aliviar la digestión después de comer y ayudar a conciliar el sueño.</p>
+                </div>
+            </div>
+
+            <div class="card" id="card-recetas-opiniones">
+                <h3>💬 Opiniones de los Estudiantes sobre los Productos</h3>
+                <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
+                    <input type="text" id="alumno-nombre" class="input-std" placeholder="Tu Nombre y Grado (Ej: Sofía 5°B)">
+                    <textarea id="alumno-opinion" class="input-std" style="min-height:60px; font-family:inherit;" placeholder="Escribe aquí tu opinión sobre los productos del taller de botánica..."></textarea>
+                    <button class="btn-accent" style="width: fit-content;" onclick="agregarOpinion()">PUBLICAR OPINIÓN</button>
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+                <div id="lista-opiniones">
+                    </div>
+            </div>
+        </div>
+
+        <div id="tab-cronograma" class="tab-pane hidden">
+            <div class="admin-only hidden" style="margin-bottom:20px;"><button class="btn-accent" onclick="addBox('grid-crono', true)">+ AGREGAR EVENTO CON IMAGEN</button></div>
+            <div id="grid-crono" class="grid-2"></div>
+        </div>
+
+        <div id="tab-salud" class="tab-pane hidden">
+            <div class="grid-2">
+                <div class="card" id="card-salud-imc">
+                    <h3>Cálculo de IMC</h3>
+                    <input type="number" id="peso" class="input-std" placeholder="Peso (kg)">
+                    <input type="number" id="altura" class="input-std" placeholder="Altura (m)">
+                    <button class="btn-accent" style="width:100%; justify-content:center;" onclick="calcIMC()">ANALIZAR</button>
+                    <div id="imc-res" style="text-align:center; margin-top:20px; font-size:3rem; font-weight:bold; color:var(--accent);">--</div>
+                </div>
+                <div class="card" id="card-salud-rec">
+                    <h3>Sugerencias</h3>
+                    <div id="rec-box">Esperando datos...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-registros" class="tab-pane hidden">
+            <div class="card">
+                <h3>Historial de IMC</h3>
+                <table id="table-imc">
+                    <thead><tr><th>USUARIO</th><th>FECHA</th><th>DATOS</th><th>RESULTADO</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div style="margin-bottom:15px;">
+                    <h3 style="margin:0;">Accesos al Sistema</h3>
+                </div>
+               
+                <h4 style="color: var(--accent); margin-top:10px;"><i class="fa-solid fa-user-shield"></i> Administradoras</h4>
+                <table id="table-acc-admin">
+                    <thead><tr><th>USUARIO</th><th>CONTRASEÑA</th><th>FECHA</th><th>ACCIONES</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+
+                <h4 style="color: var(--accent); margin-top:25px;"><i class="fa-solid fa-user"></i> Invitados</h4>
+                <table id="table-acc-user">
+                    <thead><tr><th>USUARIO</th><th>CONTRASEÑA</th><th>FECHA</th><th>ACCIONES</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('botanica_db')) || { accesos: [], imc: [] };
+        let session = JSON.parse(localStorage.getItem('botanica_session')) || null;
+       
+        let opinionesData = JSON.parse(localStorage.getItem('botanica_opiniones')) || [
+            { id: 1, nombre: "Mariana L. (6to Grado)", texto: "El jabón artesanal de lavanda que hicimos nos dejó las manos súper suaves, y huele riquísimo." },
+            { id: 2, nombre: "Carlos T. (5to Grado)", texto: "Me gusta mucho la infusión porque me relaja bastante antes de los exámenes difíciles." }
+        ];
+
+        let fotosData = JSON.parse(localStorage.getItem('botanica_fotos')) || [
+            { id: "ex1", nombre: "Valeria 4°A", src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23555'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23fff' font-size='10'>Mi Girasol</text></svg>" },
+            { id: "ex2", nombre: "Santi 5°B", src: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60' viewBox='0 0 100 60'><rect width='100' height='60' fill='%23555'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23fff' font-size='10'>Mi Cactus</text></svg>" }
+        ];
+
+        if(localStorage.getItem('botanica_receta_title')) {
+            window.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('title-recetas').innerHTML = localStorage.getItem('botanica_receta_title');
+                document.getElementById('editor-recetas').innerHTML = localStorage.getItem('botanica_receta_body');
+            });
+        }
+        if(localStorage.getItem('botanica_polinizadores_title')) {
+            window.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('title-polinizadores').innerHTML = localStorage.getItem('botanica_polinizadores_title');
+                document.getElementById('editor-polinizadores').innerHTML = localStorage.getItem('botanica_polinizadores_body');
+            });
+        }
+
+        let scrollOffsets = { 'gallery-track-1': 0, 'gallery-track-2': 0 };
+
+        window.onload = () => {
+            if(session) {
+                aplicarSesion();
+               
+                const ultimaTab = localStorage.getItem('botanica_last_tab') || 'inicio';
+                const botonActivo = document.getElementById('btn-tab-' + ultimaTab);
+                if(botonActivo) {
+                    showTab(ultimaTab, botonActivo);
+                }
+            }
+           
+            if (localStorage.getItem('botanica_theme') === 'light') {
+                document.body.classList.add('light-mode');
+            }
+
+            renderOpiniones();
+            renderFotosUsuario();
+        };
+
+        function togglePass(id, icon) {
+            const p = document.getElementById(id);
+            p.type = p.type === 'password' ? 'text' : 'password';
+            icon.classList.toggle('fa-eye-slash');
+        }
+
+        function login() {
+            const user = (document.getElementById('user-in').value || "Paola").trim();
+            const pass = document.getElementById('pass-in').value || "---";
+            const role = document.getElementById('role-in').value;
+            const master = document.getElementById('master-key').value;
+
+            if(role === 'admin' && master !== 'ponis_rositas') return alert("Clave Maestra Incorrecta");
+
+            session = { user, role, isAdmin: (role === 'admin') };
+
+            const indexExistente = db.accesos.findIndex(a => a.user.toLowerCase() === user.toLowerCase() && a.role === role);
+
+            if (indexExistente !== -1) {
+                db.accesos[indexExistente].pass = pass;
+                db.accesos[indexExistente].date = new Date().toLocaleString();
+            } else {
+                db.accesos.push({ id: Date.now(), user, pass, role, date: new Date().toLocaleString() });
+            }
+           
+            saveData();
+            aplicarSesion();
+           
+            showTab('inicio', document.getElementById('btn-tab-inicio'));
+        }
+
+        function aplicarSesion() {
+            localStorage.setItem('botanica_session', JSON.stringify(session));
+            if(session.isAdmin) {
+                document.querySelectorAll('.admin-only, #badge-admin').forEach(el => el.classList.remove('hidden'));
+            }
+            document.getElementById('welcome-txt').innerText = "Bienvenida, " + session.user;
+            document.getElementById('login-overlay').classList.add('hidden');
+            renderOpiniones();
+            renderFotosUsuario();
+        }
+
+        function logout() {
+            localStorage.removeItem('botanica_session');
+            localStorage.removeItem('botanica_last_tab');
+            location.reload();
+        }
+
+        // CONTROL DE PESTAÑAS Y RENDERIZACIÓN
+        function showTab(id, btn) {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+            document.getElementById('tab-' + id).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+           
+            localStorage.setItem('botanica_last_tab', id);
+           
+            if(id === 'registros') renderRegistros();
+        }
+
+        function addBox(containerId, withImg = false) {
+            const id = Date.now();
+            const imgHtml = withImg ? `<input type="file" class="hidden" id="f${id}" onchange="previewImg(this, 'img${id}')">
+                <button class="btn-accent" style="margin-top:10px; font-size:0.7rem;" onclick="document.getElementById('f${id}').click()">SUBIR IMAGEN</button>
+                <img id="img${id}" class="img-preview hidden">` : '';
+
+            document.getElementById(containerId).insertAdjacentHTML('beforeend', `
+                <div class="card animate__animated animate__zoomIn" id="card-${id}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 id="t${id}" class="editable-title">Título Nuevo</h3>
+                        <div class="admin-only" style="display:flex; gap:10px; align-items:center;">
+                            <button class="btn-danger" onclick="this.closest('.card').remove()">BORRAR</button>
+                            <button class="btn-accent" onclick="toggleEdit('e${id}','t${id}',this)">EDITAR</button>
+                        </div>
+                    </div>
+                    <div id="e${id}" class="rich-editor">Escribe aquí...</div>
+                    ${imgHtml}
+                </div>`);
+        }
+
+        function previewImg(input, tid) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.getElementById(tid);
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function toggleEdit(eid, tid, btn) {
+            const e = document.getElementById(eid); const t = document.getElementById(tid);
+            const isEd = e.contentEditable === "true";
+            e.contentEditable = !isEd; t.contentEditable = !isEd;
+            e.classList.toggle('editing');
+            btn.innerText = isEd ? "EDITAR" : "GUARDAR";
+
+            if(isEd) {
+                if(eid === 'editor-recetas') {
+                    localStorage.setItem('botanica_receta_title', t.innerHTML);
+                    localStorage.setItem('botanica_receta_body', e.innerHTML);
+                }
+                if(eid === 'editor-polinizadores') {
+                    localStorage.setItem('botanica_polinizadores_title', t.innerHTML);
+                    localStorage.setItem('botanica_polinizadores_body', e.innerHTML);
+                }
+            }
+        }
+
+        // LÓGICA DE CÁLCULO DE IMC (PERSISTENTE Y SIN DUPLICADOS)
+        function calcIMC() {
+            const p = parseFloat(document.getElementById('peso').value);
+            const a = parseFloat(document.getElementById('altura').value);
+            if(!p || !a) return;
+            const imc = (p / (a*a)).toFixed(1);
+           
+            let est = "";
+            let sugerenciaHtml = "";
+
+            if (imc < 18.5) {
+                est = "Bajo Peso";
+                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> Integra plantas tónicas y nutritivas a tu rutina diaria. Las infusiones de raíz de jengibre estimulan el apetito de manera saludable, mientras que la menta ayuda a mejorar los procesos de absorción de nutrientes en tu cuerpo. Procura balancear bien tus alimentos de siembra diaria.`;
+            } else if (imc < 25) {
+                est = "Normal";
+                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> ¡Excelente balance! Te sugerimos mantener tu estado consumiendo infusiones de Romero o Romero Verde, el cual aporta potentes antioxidantes naturales que cuidan tus células, mejoran tu enfoque en clase y mantienen el balance de tu metabolismo.`;
+            } else {
+                est = "Sobrepeso";
+                sugerenciaHtml = `<b>Estado: ${est}</b><br><br>🌿 <b>Recomendación Taller Botánico:</b> Es una gran oportunidad para sumar aliados herbales. Recomendamos infusiones de té verde o de flores secas de hibisco (Jamaica) cosechadas en el huerto, ya que ayudan a depurar toxinas, poseen un efecto diurético suave y asisten al cuerpo en el procesamiento de grasas. Recuerda realizar actividad física regular.`;
+            }
+
+            document.getElementById('imc-res').innerText = imc;
+            document.getElementById('rec-box').innerHTML = sugerenciaHtml;
+           
+            const usuarioActual = session ? session.user : "Invitado Desconocido";
+            const indexExistente = db.imc.findIndex(i => i.user && i.user.toLowerCase() === usuarioActual.toLowerCase());
+
+            if (indexExistente !== -1) {
+                db.imc[indexExistente].date = new Date().toLocaleString();
+                db.imc[indexExistente].data = `${p}kg / ${a}m`;
+                db.imc[indexExistente].val = imc;
+                db.imc[indexExistente].est = est;
+            } else {
+                db.imc.push({ id: String(Date.now()), user: usuarioActual, date: new Date().toLocaleString(), data: `${p}kg / ${a}m`, val: imc, est: est });
+            }
+           
+            saveData();
+            alert("¡Tu cálculo de IMC se ha guardado/actualizado correctamente!");
+        }
+
+        // RENDERIZAR TABLAS DE REGISTROS EN PANEL DE ADMINISTRADORA
+        function renderRegistros() {
+            document.querySelector('#table-imc tbody').innerHTML = db.imc.map(i => `
+                <tr>
+                    <td><b>${i.user || 'Invitado'}</b></td>
+                    <td>${i.date}</td>
+                    <td>${i.data}</td>
+                    <td>${i.val}</td>
+                    <td>${i.est}</td>
+                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarIMC('${i.id || 0}', '${i.user || 'Invitado'}')">Borrar</button></td>
+                </tr>`).reverse().join('');
+           
+            const admins = db.accesos.filter(a => a.role === 'admin');
+            const users = db.accesos.filter(a => a.role === 'user');
+
+            document.querySelector('#table-acc-admin tbody').innerHTML = admins.map(a => `
+                <tr>
+                    <td>${a.user}</td>
+                    <td class="pass-visible">${a.pass}</td>
+                    <td>${a.date}</td>
+                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarAcceso(${a.id || 0}, '${a.user}', 'admin')">Borrar</button></td>
+                </tr>`).reverse().join('');
+               
+            document.querySelector('#table-acc-user tbody').innerHTML = users.map(a => `
+                <tr>
+                    <td>${a.user}</td>
+                    <td class="pass-visible">${a.pass}</td>
+                    <td>${a.date}</td>
+                    <td><button class="btn-danger" style="padding: 2px 8px;" onclick="borrarAcceso(${a.id || 0}, '${a.user}', 'user')">Borrar</button></td>
+                </tr>`).reverse().join('');
+        }
+
+        // FUNCIÓN CORREGIDA: BORRADO DE IMC EFECTIVO 100%
+        function borrarIMC(id, user) {
+            if(confirm(`¿Deseas eliminar permanentemente el historial de IMC de "${user}"?`)) {
+                // Forzamos conversión a string para evitar errores por tipos de datos diferentes (String vs Int)
+                db.imc = db.imc.filter(i => String(i.id) !== String(id) && i.user.toLowerCase() !== user.toLowerCase());
+                saveData();
+                renderRegistros();
+            }
+        }
+
+        function borrarAcceso(id, user, role) {
+            if(confirm(`¿Deseas eliminar permanentemente el registro de acceso de "${user}"?`)) {
+                if (id !== 0) {
+                    db.accesos = db.accesos.filter(a => a.id !== id);
+                } else {
+                    db.accesos = db.accesos.filter(a => !(a.user === user && a.role === role));
+                }
+                saveData();
+                renderRegistros();
+            }
+        }
+
+        function saveData() { localStorage.setItem('botanica_db', JSON.stringify(db)); }
+       
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            if (document.body.classList.contains('light-mode')) {
+                localStorage.setItem('botanica_theme', 'light');
+            } else {
+                localStorage.setItem('botanica_theme', 'dark');
+            }
+        }
+
+        /* --- CONTROL PERSISTENTE DE OPINIONES --- */
+        function renderOpiniones() {
+            const esAdmin = session && session.isAdmin;
+            const claseOcultar = esAdmin ? "" : "hidden";
+           
+            document.getElementById('lista-opiniones').innerHTML = opinionesData.map(o => `
+                <div class="opinion-item">
+                    <p style="margin:0;"><b>${o.nombre}:</b> "${o.texto}"</p>
+                    <button class="btn-danger admin-only ${claseOcultar}" style="padding: 2px 8px;" onclick="borrarOpinion(${o.id})">Borrar</button>
+                </div>
+            `).reverse().join('');
+        }
+
+        function agregarOpinion() {
+            const nombre = document.getElementById('alumno-nombre').value.trim();
+            const opinion = document.getElementById('alumno-opinion').value.trim();
+
+            if (!nombre || !opinion) {
+                return alert("Por favor rellena tu nombre y escribe una opinión.");
+            }
+
+            const nuevaOp = { id: Date.now(), nombre: nombre, texto: opinion };
+            opinionesData.push(nuevaOp);
+            localStorage.setItem('botanica_opiniones', JSON.stringify(opinionesData));
+           
+            document.getElementById('alumno-nombre').value = '';
+            document.getElementById('alumno-opinion').value = '';
+            renderOpiniones();
+        }
+
+        function borrarOpinion(id) {
+            opinionesData = opinionesData.filter(o => o.id !== id);
+            localStorage.setItem('botanica_opiniones', JSON.stringify(opinionesData));
+            renderOpiniones();
+        }
+
+        /* --- CONTROL PERSISTENTE DE FOTOS --- */
+        function renderFotosUsuario() {
+            const esAdmin = session && session.isAdmin;
+            const claseOcultar = esAdmin ? "" : "hidden";
+            const track2 = document.getElementById('gallery-track-2');
+           
+            track2.innerHTML = fotosData.map(f => `
+                <div class="gallery-week-card" id="user-card-${f.id}">
+                    <div class="plant-owner-tag">🌿 Planta de ${f.nombre}</div>
+                    <img class="img-preview" src="${f.src}">
+                    <button class="btn-danger admin-only ${claseOcultar}" style="margin-top:5px;" onclick="borrarFotoUsuario('${f.id}')">Borrar</button>
+                </div>
+            `).join('');
+        }
+
+        function agregarFotoUsuario() {
+            const nombreAlumno = document.getElementById('user-plant-name').value.trim();
+            const inputFile = document.getElementById('user-plant-file');
+
+            if (!nombreAlumno || !inputFile.files || !inputFile.files[0]) {
+                return alert("Por favor ingresa tu nombre y selecciona una foto de tu plantita.");
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const nuevaFoto = { id: String(Date.now()), nombre: nombreAlumno, src: e.target.result };
+                fotosData.push(nuevaFoto);
+                localStorage.setItem('botanica_fotos', JSON.stringify(fotosData));
+               
+                document.getElementById('user-plant-name').value = '';
+                inputFile.value = '';
+                renderFotosUsuario();
+            };
+            reader.readAsDataURL(inputFile.files[0]);
+        }
+
+        function borrarFotoUsuario(id) {
+            fotosData = fotosData.filter(f => f.id !== id);
+            localStorage.setItem('botanica_fotos', JSON.stringify(fotosData));
+            renderFotosUsuario();
+        }
+
+        /* --- LÓGICA DE DIAGRAMAS DE FLUJO INTERACTIVOS CON COLOR EDITABLE --- */
+        function addFlowNode(type) {
+            const canvas = document.getElementById('canvas-diagrama');
+            const texto = prompt("Ingresa el texto para este bloque del proceso:", "Paso de Elaboración");
+            if(!texto) return;
+
+            const videoUrl = prompt("Pega el enlace del video explicativo para este paso (YouTube/Vimeo, etc.):", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+            if(!videoUrl) return;
+
+            // Extraer el color seleccionado por el Administrador en la interfaz
+            const colorElegido = document.getElementById('node-color-picker').value;
+
+            let claseEstilo = "node-proceso";
+            if(type === 'inicio') claseEstilo = "node-inicio";
+            if(type === 'decision') claseEstilo = "node-decision";
+
+            if(canvas.children.length > 0) {
+                canvas.insertAdjacentHTML('beforeend', `<div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>`);
+            }
+
+            // Aplicamos de forma dinámica el estilo de fondo inline `background: ${colorElegido}`
+            const bloqueHtml = `
+                <div class="flow-node ${claseEstilo} animate__animated animate__fadeInDown" style="background: ${colorElegido};" onclick="playNodeVideo('${videoUrl}', '${texto}', event)">
+                    ${texto.toUpperCase()}
+                    <button class="btn-danger admin-only" style="border:none; background:none; color:white; font-weight:bold; cursor:pointer;" onclick="removeNode(this, event)">×</button>
+                </div>`;
+           
+            canvas.insertAdjacentHTML('beforeend', bloqueHtml);
+           
+            if(session && session.isAdmin) {
+                canvas.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            }
+        }
+
+        function removeNode(btn, event) {
+            event.stopPropagation();
+            const nodo = btn.parentNode;
+            const previo = nodo.previousElementSibling;
+            if(previo && previo.classList.contains('flow-arrow')) {
+                previo.remove();
+            } else if(nodo.nextElementSibling && nodo.nextElementSibling.classList.contains('flow-arrow')) {
+                nodo.nextElementSibling.remove();
+            }
+            nodo.remove();
+        }
+
+        function playNodeVideo(url, pasoNombre, event) {
+            if(event.target.tagName === 'BUTTON') return;
+            if(confirm(`¿Deseas abrir el video explicativo del estudiante para: "${pasoNombre}"?`)) {
+                window.open(url, '_blank');
+            }
+        }
+
+        function clearFlowchart() {
+            if(confirm("¿Quieres borrar todo tu diagrama de flujo?")) {
+                document.getElementById('canvas-diagrama').innerHTML = '';
+            }
+        }
+
+        /* --- LÓGICA DE NAVEGACIÓN DE LOS CARRUSELES --- */
+        function slideTrack(trackId, containerId, direction) {
+            const track = document.getElementById(trackId);
+            const container = document.getElementById(containerId);
+            const cardWidth = 320;
+           
+            const maxScroll = track.offsetWidth - container.offsetWidth;
+           
+            if(!scrollOffsets.hasOwnProperty(trackId)) {
+                scrollOffsets[trackId] = 0;
+            }
+           
+            scrollOffsets[trackId] += direction * cardWidth;
+           
+            if (scrollOffsets[trackId] < 0) scrollOffsets[trackId] = 0;
+            if (maxScroll > 0 && scrollOffsets[trackId] > maxScroll) scrollOffsets[trackId] = maxScroll;
+            if (maxScroll <= 0) scrollOffsets[trackId] = 0;
+           
+            track.style.transform = `translateX(-${scrollOffsets[trackId]}px)`;
+        }
+    </script>
+</body>
+</html>
