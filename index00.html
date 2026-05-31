@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Vida Saludable | Botánica Pro</title>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+rel="stylesheet">
+
+<style>
+
+:root{
+    --bg:#DCD189;
+    --sidebar:#AFA231;
+    --card:#ffffff;
+    --accent:#B8C944;
+    --accent-dark:#8C0004;
+    --text:#3E2723;
+    --border:rgba(62,39,35,0.15);
+    --danger:#E98611;
+    --white:#ffffff;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Poppins',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    overflow-x:hidden;
+}
+
+/* NAV */
+nav{
+    width:100%;
+    padding:20px 8%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    position:fixed;
+    top:0;
+    z-index:1000;
+    background:rgba(220,209,137,0.92);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+}
+
+.logo{
+    font-size:1.6rem;
+    font-weight:bold;
+    color:var(--accent-dark);
+}
+
+.nav-btn{
+    background:var(--accent-dark);
+    border:none;
+    padding:12px 28px;
+    border-radius:14px;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.nav-btn:hover{
+    background:var(--danger);
+    transform:scale(1.05);
+}
+
+/* HERO */
+.hero{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:120px 10%;
+    background:
+    linear-gradient(rgba(15,15,15,0.78),rgba(15,15,15,0.68)),
+    url('https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=1400');
+    background-size:cover;
+    background-position:center;
+}
+
+.hero-content{
+    background:rgba(20,20,20,0.35);
+    padding:50px;
+    border-radius:35px;
+    backdrop-filter:blur(15px);
+    border:1px solid rgba(255,255,255,0.12);
+    max-width:900px;
+}
+
+.hero-content h1{
+    font-size:5rem;
+    color:var(--accent);
+}
+
+.hero-content p{
+    font-size:1.3rem;
+    color:white;
+}
+
+/* 🟩 CUADRO GRANDE NUEVO */
+.intro-box{
+    width:85%;
+    margin:60px auto;
+    background:white;
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.15);
+    font-size:1.05rem;
+    line-height:1.6;
+}
+
+/* INTRO GRID */
+.intro-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:25px;
+    padding:60px 10%;
+}
+
+.info-card{
+    background:var(--card);
+    padding:20px;
+    border-radius:20px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.08);
+    transition:0.3s;
+}
+
+.info-card:hover{
+    transform:translateY(-8px);
+}
+
+/* RESPONSIVE */
+@media (max-width:900px){
+    .intro-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+
+@media (max-width:600px){
+    .intro-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+/* SECCIONES */
+.section{
+    padding:90px 10%;
+}
+
+.section-title{
+    text-align:center;
+    font-size:2.7rem;
+    color:var(--accent-dark);
+    margin-bottom:50px;
+}
+
+/* GRID CARDS */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:30px;
+}
+
+.card{
+    background:var(--card);
+    border-radius:25px;
+    overflow:hidden;
+    box-shadow:0 8px 25px rgba(0,0,0,0.08);
+    transition:0.4s;
+}
+
+.card:hover{
+    transform:translateY(-10px);
+}
+
+.card img{
+    width:100%;
+    height:230px;
+    object-fit:cover;
+}
+
+.card-content{
+    padding:20px;
+}
+
+/* FOOTER */
+footer{
+    background:var(--accent-dark);
+    text-align:center;
+    padding:30px;
+    color:#fff;
+    margin-top:50px;
+}
+
+</style>
+</head>
+
+<body>
+
+<nav>
+<div class="logo">🌿 VIDA SALUDABLE</div>
+<button class="nav-btn" onclick="window.location.href='index2.html'">
+INGRESAR
+</button>
+</nav>
+
+<section class="hero">
+<div class="hero-content animate__animated animate__fadeIn">
+<h1>VIDA SALUDABLE</h1>
+<p>Una vida saludable consiste en buenos hábitos.</p>
+</div>
+</section>
+
+<!-- 🟩 CUADRO GRANDE AGREGADO -->
+<div class="intro-box">
+Llevar una vida saludable es un conjunto de hábitos diarios que ayudan a que el cuerpo y la mente funcionen mejor, previenen enfermedades y mejoran la calidad de vida. No se trata solo de “no enfermarse”, sino de tener energía, buen ánimo, concentración y bienestar a largo plazo.
+</div>
+
+<!-- INTRO GRID -->
+<section class="intro-grid">
+
+  <div class="info-card">
+    <h2>🌱 Vida saludable</h2>
+    <p>Hábitos que mejoran cuerpo y mente.</p>
+  </div>
+
+  <div class="info-card">
+    <h2>🥗 Alimentación</h2>
+    <p>Frutas, verduras, proteínas y agua natural.</p>
+  </div>
+
+  <div class="info-card">
+    <h2>🏃 Ejercicio</h2>
+    <p>Mejora la energía y reduce el estrés.</p>
+  </div>
+
+  <div class="info-card">
+    <h2>🧠 Descanso</h2>
+    <p>7 a 9 horas para buen rendimiento mental.</p>
+  </div>
+
+  <div class="info-card">
+    <h2>🌿 Huerto polinizador</h2>
+    <p>Atrae abejas y mejora el ecosistema.</p>
+  </div>
+
+  <div class="info-card">
+    <h2>💜 Lavanda</h2>
+    <p>Planta relajante y aromática.</p>
+  </div>
+
+  <div class="info-card">
+    <h2>🧼 Productos naturales</h2>
+    <p>Hechos sin químicos agresivos.</p>
+  </div>
+
+</section>
+
+<!-- GRID PRINCIPAL -->
+<section class="section">
+
+<h2 class="section-title">Hábitos Saludables</h2>
+
+<div class="grid">
+
+<div class="card">
+<img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=1200">
+<div class="card-content">
+<h3>🥗 Alimentación</h3>
+<p>Frutas y verduras.</p>
+</div>
+</div>
+
+<div class="card">
+<img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1200">
+<div class="card-content">
+<h3>🏃 Ejercicio</h3>
+<p>Mejora el cuerpo.</p>
+</div>
+</div>
+
+<div class="card">
+<img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1200">
+<div class="card-content">
+<h3>🧠 Descanso</h3>
+<p>Salud mental.</p>
+</div>
+</div>
+
+<div class="card">
+<img src="https://images.unsplash.com/photo-1445510491599-c391e8046a68">
+<div class="card-content">
+<h3>🪻 Huerto Polinizador</h3>
+<p>Espacio natural con lavanda.</p>
+</div>
+</div>
+
+<div class="card">
+<img src="https://plus.unsplash.com/premium_photo-1661329993435-9db01c7f433a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8UFJPRFVDVE9TJTIwTkFUVVJBTEVTfGVufDB8fDB8fHww">
+<div class="card-content">
+<h3>🧼 Productos Naturales</h3>
+<p>Elaborados con plantas.</p>
+</div>
+</div>
+
+</div>
+
+</section>
+
+<footer>
+© Ponis Rositas 🦄
+</footer>
+
+</body>
+</html>
