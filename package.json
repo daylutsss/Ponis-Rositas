@@ -1,10 +1,20 @@
 {
-  "name": "vida-saludable",
+  "name": "botanicapro",
   "version": "1.0.0",
+  "description": "Proyecto escolar de vida saludable, lavanda y jardín polinizador",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "keywords": [
+    "lavanda",
+    "salud",
+    "polinizadores",
+    "neon",
+    "api"
+  ],
+  "author": "Equipo BotanicaPro",
+  "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
