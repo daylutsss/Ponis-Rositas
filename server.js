@@ -7,8 +7,8 @@ require("dotenv").config();
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "25mb" }));
-app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 app.use(express.static(__dirname));
 
@@ -56,6 +56,16 @@ async function crearTablas() {
       titulo TEXT,
       cuerpo TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS entradas (
+      id SERIAL PRIMARY KEY,
+      seccion TEXT NOT NULL,
+      usuario TEXT,
+      titulo TEXT NOT NULL,
+      texto TEXT NOT NULL,
+      imagen TEXT,
+      fecha TIMESTAMP DEFAULT NOW()
+    );
   `);
 
   console.log("Tablas listas en Neon/Postgres");
@@ -78,6 +88,7 @@ app.get("/api/accesos", async (req, res) => {
     const result = await pool.query("SELECT * FROM accesos ORDER BY id DESC");
     res.json(result.rows);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al obtener accesos" });
   }
 });
@@ -90,11 +101,12 @@ app.post("/api/accesos", async (req, res) => {
       `INSERT INTO accesos (usuario, password, role)
        VALUES ($1, $2, $3)
        RETURNING *`,
-      [usuario, password, role]
+      [usuario || "Sin usuario", password || "", role || "user"]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al guardar acceso" });
   }
 });
@@ -104,6 +116,7 @@ app.delete("/api/accesos/:id", async (req, res) => {
     await pool.query("DELETE FROM accesos WHERE id = $1", [req.params.id]);
     res.json({ mensaje: "Acceso eliminado" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al eliminar acceso" });
   }
 });
@@ -115,6 +128,7 @@ app.get("/api/imc", async (req, res) => {
     const result = await pool.query("SELECT * FROM imc ORDER BY id DESC");
     res.json(result.rows);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al obtener IMC" });
   }
 });
@@ -127,11 +141,12 @@ app.post("/api/imc", async (req, res) => {
       `INSERT INTO imc (usuario, peso, altura, resultado, estado)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [usuario, peso, altura, resultado, estado]
+      [usuario || "Invitado", peso, altura, resultado, estado]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al guardar IMC" });
   }
 });
@@ -141,17 +156,19 @@ app.delete("/api/imc/:id", async (req, res) => {
     await pool.query("DELETE FROM imc WHERE id = $1", [req.params.id]);
     res.json({ mensaje: "IMC eliminado" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al eliminar IMC" });
   }
 });
 
-/* COMENTARIOS / OPINIONES */
+/* COMENTARIOS */
 
 app.get("/api/comentarios", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM comentarios ORDER BY id DESC");
     res.json(result.rows);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al obtener comentarios" });
   }
 });
@@ -169,6 +186,7 @@ app.post("/api/comentarios", async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al guardar comentario" });
   }
 });
@@ -178,6 +196,7 @@ app.delete("/api/comentarios/:id", async (req, res) => {
     await pool.query("DELETE FROM comentarios WHERE id = $1", [req.params.id]);
     res.json({ mensaje: "Comentario eliminado" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al eliminar comentario" });
   }
 });
@@ -189,6 +208,7 @@ app.get("/api/fotos", async (req, res) => {
     const result = await pool.query("SELECT * FROM fotos ORDER BY id DESC");
     res.json(result.rows);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al obtener fotos" });
   }
 });
@@ -206,6 +226,7 @@ app.post("/api/fotos", async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al guardar foto" });
   }
 });
@@ -215,6 +236,7 @@ app.delete("/api/fotos/:id", async (req, res) => {
     await pool.query("DELETE FROM fotos WHERE id = $1", [req.params.id]);
     res.json({ mensaje: "Foto eliminada" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al eliminar foto" });
   }
 });
@@ -230,6 +252,7 @@ app.get("/api/contenido/:clave", async (req, res) => {
 
     res.json(result.rows[0] || null);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al obtener contenido" });
   }
 });
@@ -249,7 +272,68 @@ app.put("/api/contenido/:clave", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Error al guardar contenido" });
+  }
+});
+
+/* BITÁCORA Y CRONOGRAMA */
+
+app.get("/api/entradas/:seccion", async (req, res) => {
+  try {
+    const { seccion } = req.params;
+
+    const result = await pool.query(
+      `SELECT * FROM entradas
+       WHERE seccion = $1
+       ORDER BY id DESC`,
+      [seccion]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener entradas" });
+  }
+});
+
+app.post("/api/entradas", async (req, res) => {
+  try {
+    const { seccion, usuario, titulo, texto, imagen } = req.body;
+
+    if (!seccion || !titulo || !texto) {
+      return res.status(400).json({
+        error: "Faltan datos: seccion, titulo o texto"
+      });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO entradas (seccion, usuario, titulo, texto, imagen)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [
+        seccion,
+        usuario || "Invitado",
+        titulo,
+        texto,
+        imagen || ""
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al guardar entrada" });
+  }
+});
+
+app.delete("/api/entradas/:id", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM entradas WHERE id = $1", [req.params.id]);
+    res.json({ mensaje: "Entrada eliminada" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al eliminar entrada" });
   }
 });
 
