@@ -10,22 +10,15 @@
    
     <style>
         :root {
-            /* PALETA NUEVA: azules, blanco/beige y verde */
-            --bg: #eef5f8;
-            --bg-soft: #f8fbfc;
-            --sidebar: #102a43;
-            --sidebar-2: #1b4965;
-            --card: rgba(255, 255, 255, 0.92);
-            --card-strong: #ffffff;
-            --accent: #2f80ed;
-            --accent-2: #76b6c4;
-            --green: #2f9e44;
-            --beige: #f4efe4;
-            --border: rgba(27, 73, 101, 0.14);
-            --danger: #e05252;
-            --shadow: 0 18px 45px rgba(16, 42, 67, 0.10);
-            --shadow-soft: 0 10px 24px rgba(16, 42, 67, 0.08);
+            /* === MODO OSCURO (Default) === */
+            --bg: #DCD189;
+            --sidebar: #4C0004;
+            --card: #AFA231;
+            --accent: #ff9100;
+            --border: #30363d;
+            --danger: #ff4444;
 
+            /* === VARIABLES DE TIPOGRAFÍA POR OBJETO === */
             --font-global: 'Plus Jakarta Sans', sans-serif;
             --font-polinizadores: 'Plus Jakarta Sans', sans-serif;
             --font-diagramas: 'Plus Jakarta Sans', sans-serif;
@@ -33,434 +26,133 @@
             --font-recetas: 'Plus Jakarta Sans', sans-serif;
             --font-salud: 'Plus Jakarta Sans', sans-serif;
 
-            --text-titles: #123047;
-            --text-main: #294154;
-            --text-dim: #6b7f90;
+            /* === VARIABLES DE COLOR DE TEXTO MODO OSCURO === */
+            --text-titles: #314e00;    
+            --text-main: #fbe9c5;      
+            --text-dim: #8b949e;        
 
-            --text-polinizadores-title: #123047;
-            --text-polinizadores-body: #294154;
-
-            --input-bg: #ffffff;
-            --input-text: #19364d;
+            /* Colores específicos para Polinizadores */
+            --text-polinizadores-title: #314e00;
+            --text-polinizadores-body: #fbe9c5;
+           
+            /* Variables de Campos e Inputs */
+            --input-bg: #090b0e;        
+            --input-text: #e6edf3;      
         }
 
         .light-mode {
-            --bg: #102a43;
-            --bg-soft: #153957;
-            --sidebar: #081b2d;
-            --sidebar-2: #123047;
-            --card: rgba(20, 51, 76, 0.92);
-            --card-strong: #173b59;
-            --border: rgba(180, 214, 224, 0.20);
-            --accent: #76b6c4;
-            --accent-2: #a9d6e5;
-            --green: #74c69d;
-            --beige: #203d52;
-            --text-titles: #f3fbff;
-            --text-main: #e8f3f6;
-            --text-dim: #b7c7d3;
-            --text-polinizadores-title: #ffffff;
-            --text-polinizadores-body: #e8f3f6;
-            --input-bg: #0d2538;
-            --input-text: #f4fbff;
-            --shadow: 0 18px 45px rgba(0,0,0,0.22);
-        }
+            /* === MODO CLARO PERSONALIZADO === */
+            --bg: #242810;            
+            --sidebar: #060409;        
+            --card: #768340;          
+            --border: #dce0e5;
+            --accent: #768340;
 
-        * { box-sizing: border-box; }
+            /* === VARIABLES DE COLOR DE TEXTO MODO CLARO === */
+            --text-titles: #000000;    
+            --text-main: #3d4a26;      
+            --text-dim: #65676b;      
+
+            /* Colores específicos para Polinizadores en Claro */
+            --text-polinizadores-title: #2d361e;
+            --text-polinizadores-body: #3d4a26;
+
+            --input-bg: #ffffff;      
+            --input-text: #3d4a26;    
+        }
 
         body {
             font-family: var(--font-global);
-            background:
-                radial-gradient(circle at top left, rgba(118, 182, 196, .38), transparent 28%),
-                linear-gradient(135deg, var(--bg) 0%, var(--bg-soft) 52%, var(--beige) 100%);
-            color: var(--text-main);
-            margin: 0;
-            display: flex;
-            min-height: 100vh;
-            transition: 0.3s ease;
+            background-color: var(--bg); color: var(--text-main);
+            margin: 0; display: flex; min-height: 100vh; transition: 0.3s;
         }
 
+        /* --- ASIGNACIÓN DE TIPOGRAFÍAS Y COLORES INDEPENDIENTES --- */
         #card-polinizadores h3 { font-family: var(--font-polinizadores) !important; color: var(--text-polinizadores-title) !important; }
         #card-polinizadores .rich-editor { font-family: var(--font-polinizadores) !important; color: var(--text-polinizadores-body) !important; }
+
         #card-diagrams-main { font-family: var(--font-diagramas) !important; }
         #card-gal-1, #card-gal-2, .gallery-week-card { font-family: var(--font-carruseles) !important; }
         #card-recetas-1, #card-recetas-opiniones { font-family: var(--font-recetas) !important; }
         #card-salud-imc, #card-salud-rec { font-family: var(--font-salud) !important; }
 
-        h1, h2, h3, h4, .editable-title { color: var(--text-titles) !important; letter-spacing: -0.02em; }
+        h1, h2, h3, .editable-title { color: var(--text-titles) !important; }
         p, .rich-editor, div, td { color: var(--text-main); }
         span, th { color: var(--text-dim); }
 
+        /* --- INPUTS DE DATOS --- */
         .input-std {
             width: 100%;
-            padding: 13px 14px;
-            border-radius: 16px;
+            padding: 12px;
+            border-radius: 10px;
             background: var(--input-bg);
-            border: 1.5px solid var(--border);
+            border: 2px solid var(--border);
             color: var(--input-text) !important;
             box-sizing: border-box;
             font-family: inherit;
-            transition: 0.25s ease;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
+            transition: 0.3s;
         }
-        .input-std::placeholder { color: var(--text-dim); opacity: 0.78; }
+        .input-std::placeholder {
+            color: var(--text-dim);
+            opacity: 0.7;
+        }
         .input-std:focus {
             border-color: var(--accent);
             outline: none;
-            box-shadow: 0 0 0 4px rgba(47, 128, 237, 0.12);
         }
 
-        #login-overlay {
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(circle at top, rgba(118,182,196,.45), transparent 34%),
-                linear-gradient(140deg, #102a43, #1b4965 48%, #eef5f8 48%);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .login-card {
-            background: rgba(255,255,255,.92);
-            padding: 38px;
-            border-radius: 30px;
-            border: 1px solid rgba(255,255,255,.6);
-            width: min(390px, 100%);
-            text-align: center;
-            box-shadow: 0 25px 70px rgba(0,0,0,.22);
-            backdrop-filter: blur(12px);
-        }
-        .login-card h2 { color: #1b4965 !important; }
+        /* --- LOGIN --- */
+        #login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .login-card { background: var(--card); padding: 40px; border-radius: 25px; border: 1px solid var(--border); width: 350px; text-align: center; }
         .input-group { position: relative; margin: 8px 0; }
-        .eye-login { position: absolute; right: 14px; top: 14px; cursor: pointer; color: var(--text-dim); z-index: 10; }
+        .eye-login { position: absolute; right: 12px; top: 12px; cursor: pointer; color: var(--text-dim); z-index: 10; }
 
-        .sidebar {
-            width: 285px;
-            background: linear-gradient(180deg, var(--sidebar), var(--sidebar-2));
-            border-right: 1px solid rgba(255,255,255,.12);
-            padding: 1.4rem 1rem;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            box-shadow: 12px 0 35px rgba(16,42,67,.15);
-        }
-        .sidebar > div:first-child {
-            background: rgba(255,255,255,.10);
-            color: #ffffff !important;
-            border: 1px solid rgba(255,255,255,.12);
-            border-radius: 20px;
-            padding: 16px;
-            margin-bottom: 1.2rem !important;
-            text-align: center;
-        }
-        .sidebar nav { display: flex; flex-direction: column; gap: 7px; }
-        .sidebar div { color: #d8f3dc !important; }
-        .nav-btn {
-            background: transparent;
-            color: #d7e7ef;
-            border: 1px solid transparent;
-            padding: 13px 14px;
-            text-align: left;
-            border-radius: 16px;
-            cursor: pointer;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            width: 100%;
-            margin-bottom: 0;
-            font-family: inherit;
-            transition: .22s ease;
-        }
-        .nav-btn i { width: 20px; text-align: center; color: #a9d6e5; }
-        .nav-btn:hover {
-            background: rgba(255,255,255,.10);
-            border-color: rgba(255,255,255,.12);
-            transform: translateX(3px);
-        }
-        .nav-btn.active {
-            background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(244,239,228,.95));
-            color: #123047;
-            box-shadow: var(--shadow-soft);
-        }
-        .nav-btn.active i { color: var(--green); }
+        /* --- UI COMPONENTES --- */
+        .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 2rem 1rem; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar div { color: var(--accent) !important; }
+        .nav-btn { background: transparent; color: var(--text-dim); border: none; padding: 12px 15px; text-align: left; border-radius: 12px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 5px; font-family: inherit; }
+        .nav-btn.active { background: rgba(255, 145, 0, 0.1); color: var(--accent); }
 
-        .main-content {
-            flex: 1;
-            padding: 2rem clamp(1rem, 3vw, 3rem);
-            overflow-y: auto;
-            position: relative;
-        }
-        .main-content > header {
-            background: linear-gradient(135deg, rgba(255,255,255,.80), rgba(244,239,228,.78));
-            border: 1px solid var(--border);
-            border-radius: 28px;
-            padding: 22px 26px;
-            box-shadow: var(--shadow-soft);
-            backdrop-filter: blur(10px);
-        }
-        .main-content > header h1::after {
-            content: "Sistema de botánica escolar";
-            display: block;
-            margin-top: 6px;
-            font-size: .9rem;
-            font-weight: 600;
-            color: var(--text-dim);
-            letter-spacing: 0;
-        }
+        .main-content { flex: 1; padding: 2rem; overflow-y: auto; position: relative; }
+        .card { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 20px; margin-bottom: 1.5rem; position: relative; transition: background-color 0.3s; }
+       
+        .btn-accent { background: var(--accent); border: none; color: white; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; }
+        .btn-danger { background: rgba(255, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); padding: 6px 14px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
+       
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .rich-editor { min-height: 40px; outline: none; margin-top: 10px; }
+        .editing { border: 1px dashed var(--accent); padding: 5px; border-radius: 5px; }
 
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            padding: 24px;
-            border-radius: 28px;
-            margin-bottom: 1.5rem;
-            position: relative;
-            transition: 0.3s ease;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(10px);
-            overflow: hidden;
-        }
-        .card::before {
-            content: "";
-            position: absolute;
-            inset: 0 0 auto 0;
-            height: 5px;
-            background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--green));
-        }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 24px 55px rgba(16,42,67,.13); }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th { text-align: left; padding: 12px; color: var(--accent) !important; border-bottom: 2px solid var(--border); font-size: 0.8rem; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .pass-visible { font-family: monospace; color: var(--accent); font-weight: bold; }
 
-        .btn-accent {
-            background: linear-gradient(135deg, var(--accent), #1b6fd1);
-            border: none;
-            color: white !important;
-            padding: 11px 18px;
-            border-radius: 14px;
-            font-weight: 800;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-family: inherit;
-            box-shadow: 0 10px 20px rgba(47,128,237,.20);
-            transition: .2s ease;
-        }
-        .btn-accent:hover { transform: translateY(-1px); filter: brightness(1.04); }
-        .btn-danger {
-            background: rgba(224, 82, 82, 0.09);
-            color: var(--danger) !important;
-            border: 1px solid rgba(224,82,82,.38);
-            padding: 7px 14px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
-            gap: 22px;
-            align-items: start;
-        }
-        #grid-inicio { grid-template-columns: minmax(320px, 1.2fr) minmax(280px, .8fr); }
-        .rich-editor { min-height: 40px; outline: none; margin-top: 10px; line-height: 1.75; }
-        .editing {
-            border: 1.5px dashed var(--accent);
-            padding: 10px;
-            border-radius: 16px;
-            background: rgba(47,128,237,.06);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 8px;
-            margin-bottom: 15px;
-        }
-        th {
-            text-align: left;
-            padding: 12px;
-            color: var(--accent) !important;
-            border-bottom: none;
-            font-size: 0.78rem;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-        }
-        td {
-            padding: 13px;
-            border-bottom: none;
-            font-size: 0.9rem;
-            background: rgba(255,255,255,.55);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-        }
-        td:first-child { border-left: 1px solid var(--border); border-radius: 14px 0 0 14px; }
-        td:last-child { border-right: 1px solid var(--border); border-radius: 0 14px 14px 0; }
-        .pass-visible { font-family: monospace; color: var(--accent) !important; font-weight: bold; }
-
-        .img-preview {
-            width: 100%;
-            max-width: 100%;
-            min-height: 150px;
-            border-radius: 20px;
-            margin-top: 10px;
-            border: 1px solid var(--border);
-            object-fit: cover;
-            box-shadow: var(--shadow-soft);
-        }
-        .theme-toggle {
-            position: absolute;
-            top: 26px;
-            right: 34px;
-            cursor: pointer;
-            font-size: 1.35rem;
-            color: var(--accent);
-            background: var(--card-strong);
-            width: 46px;
-            height: 46px;
-            display: grid;
-            place-items: center;
-            border-radius: 16px;
-            box-shadow: var(--shadow-soft);
-            border: 1px solid var(--border);
-        }
+        .img-preview { max-width: 100%; border-radius: 10px; margin-top: 10px; border: 1px solid var(--border); object-fit: cover; }
+        .theme-toggle { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 1.4rem; color: var(--accent); }
         .hidden { display: none !important; }
 
-        .opinion-item {
-            border-bottom: 1px dashed var(--border);
-            padding: 12px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(118,182,196,.09);
-            border-radius: 16px;
-        }
+        .opinion-item { border-bottom: 1px dashed var(--border); padding: 10px 0; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         .opinion-item:last-child { border-bottom: none; }
 
-        .flowchart-canvas {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            padding: 24px;
-            background: linear-gradient(135deg, rgba(244,239,228,.75), rgba(118,182,196,.16));
-            border-radius: 24px;
-            min-height: 220px;
-            margin-top: 15px;
-            border: 1px solid var(--border);
-        }
-        .flow-node {
-            padding: 13px 22px;
-            min-width: 180px;
-            text-align: center;
-            font-weight: 800;
-            color: #ffffff !important;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            border-radius: 16px;
-            box-shadow: 0 10px 24px rgba(16,42,67,.18);
-        }
+        /* --- ESTILOS COMPONENTES DIAGRAMAS --- */
+        .flowchart-canvas { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px; background: rgba(0,0,0,0.05); border-radius: 15px; min-height: 200px; margin-top: 15px; }
+        .flow-node { padding: 12px 20px; min-width: 150px; text-align: center; font-weight: bold; color: #ffffff !important; position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform 0.2s; border-radius: 8px; }
         .flow-node:hover { transform: scale(1.04); }
         .node-inicio, .node-fin { border-radius: 50px; }
-        .node-decision { border-radius: 8px 28px 8px 28px; }
-        .flow-arrow { color: var(--green); font-size: 1.5rem; text-align: center; margin: -5px 0; }
+        .node-decision { transform: rotate(0deg); border-radius: 4px; }
+        .flow-arrow { color: var(--accent); font-size: 1.5rem; text-align: center; margin: -5px 0; }
 
-        .gallery-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            width: 100%;
-            margin-top: 20px;
-            position: relative;
-        }
-        .gallery-arrow-btn {
-            background: linear-gradient(135deg, var(--green), #1f8a3b);
-            color: white;
-            border: none;
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            transition: 0.2s;
-            box-shadow: var(--shadow-soft);
-        }
-        .gallery-arrow-btn:hover { transform: scale(1.07); opacity: 0.95; }
+        /* --- ESTILOS EXCLUSIVOS PARA LOS CARRUSELES EN TIRA --- */
+        .gallery-wrapper { display: flex; align-items: center; gap: 15px; width: 100%; margin-top: 20px; position: relative; }
+        .gallery-arrow-btn { background: var(--accent); color: white; border: none; width: 45px; height: 45px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s; }
+        .gallery-arrow-btn:hover { transform: scale(1.1); opacity: 0.9; }
         .gallery-timeline-container { flex: 1; overflow: hidden; position: relative; padding: 10px 0; }
         .gallery-track { display: flex; gap: 20px; transition: transform 0.4s ease-in-out; width: max-content; }
-        .gallery-week-card {
-            width: 305px;
-            background: linear-gradient(180deg, var(--card-strong), rgba(244,239,228,.72));
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            box-sizing: border-box;
-            flex-shrink: 0;
-            transition: background-color 0.3s;
-            position: relative;
-            box-shadow: var(--shadow-soft);
-        }
-        .gallery-week-card h4 {
-            margin: 0;
-            color: var(--text-titles) !important;
-            font-size: 1rem;
-            text-align: center;
-            background: rgba(47,128,237,.10);
-            padding: 10px;
-            border-radius: 14px;
-        }
-        .plant-owner-tag {
-            background: rgba(47, 158, 68, 0.12);
-            color: var(--green) !important;
-            padding: 8px;
-            text-align: center;
-            font-weight: 800;
-            border-radius: 14px;
-            font-size: 0.88rem;
-            border: 1px solid rgba(47,158,68,.18);
-        }
-
-        #tab-galeria .card, #tab-apis .card { background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(244,239,228,.72)); }
-        #tab-salud #imc-res { color: var(--green) !important; }
-
-        @media (max-width: 900px) {
-            body { flex-direction: column; }
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                padding: 1rem;
-            }
-            .sidebar nav {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-            }
-            .nav-btn:hover { transform: none; }
-            .main-content { padding: 1rem; }
-            .theme-toggle { top: 18px; right: 18px; }
-            #grid-inicio { grid-template-columns: 1fr; }
-            .gallery-wrapper { gap: 8px; }
-            .gallery-week-card { width: 265px; }
-        }
+        .gallery-week-card { width: 300px; background: var(--sidebar); border: 1px solid var(--border); border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; flex-shrink: 0; transition: background-color 0.3s; position: relative; }
+        .gallery-week-card h4 { margin: 0; color: #ffffff !important; font-size: 0.95rem; text-align: center; }
+       
+        .plant-owner-tag { background: rgba(255, 145, 0, 0.2); color: var(--accent); padding: 5px; text-align: center; font-weight: bold; border-radius: 8px; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -528,7 +220,21 @@
         </div>
 
         <div id="tab-bitacora" class="tab-pane hidden">
-            <div class="admin-only hidden" style="margin-bottom:20px;"><button class="btn-accent" onclick="addBox('grid-bitacora', true)">+ NUEVO PANEL CON IMAGEN</button></div>
+            <div class="card">
+                <h3>Agregar entrada a la Bitácora</h3>
+                <p>Escribe tu avance, evidencia o reflexión del proyecto. Se guardará en Neon.</p>
+
+                <input type="text" id="bitacora-titulo" class="input-std" placeholder="Título de la entrada">
+
+                <textarea id="bitacora-texto" class="input-std" style="margin-top:10px; min-height:120px; resize:vertical;" placeholder="Escribe aquí tu información"></textarea>
+
+                <input type="file" id="bitacora-imagen" class="input-std" accept="image/*" style="margin-top:10px;">
+
+                <button class="btn-accent" style="margin-top:10px;" onclick="agregarEntradaSeccion('bitacora')">
+                    <i class="fa-solid fa-floppy-disk"></i> GUARDAR BITÁCORA
+                </button>
+            </div>
+
             <div id="grid-bitacora" class="grid-2"></div>
         </div>
 
@@ -682,7 +388,21 @@
         </div>
 
         <div id="tab-cronograma" class="tab-pane hidden">
-            <div class="admin-only hidden" style="margin-bottom:20px;"><button class="btn-accent" onclick="addBox('grid-crono', true)">+ AGREGAR EVENTO CON IMAGEN</button></div>
+            <div class="card">
+                <h3>Agregar actividad al Cronograma</h3>
+                <p>Registra una actividad, fecha, acuerdo o tarea del proyecto. Se guardará en Neon.</p>
+
+                <input type="text" id="cronograma-titulo" class="input-std" placeholder="Nombre de la actividad">
+
+                <textarea id="cronograma-texto" class="input-std" style="margin-top:10px; min-height:120px; resize:vertical;" placeholder="Describe la actividad, fecha o indicaciones"></textarea>
+
+                <input type="file" id="cronograma-imagen" class="input-std" accept="image/*" style="margin-top:10px;">
+
+                <button class="btn-accent" style="margin-top:10px;" onclick="agregarEntradaSeccion('cronograma')">
+                    <i class="fa-solid fa-floppy-disk"></i> GUARDAR CRONOGRAMA
+                </button>
+            </div>
+
             <div id="grid-crono" class="grid-2"></div>
         </div>
 
@@ -778,6 +498,8 @@
         let opinionesData = [];
         let fotosData = [];
         let galeriaSemanas = {};
+        let bitacoraData = [];
+        let cronogramaData = [];
         let scrollOffsets = { 'gallery-track-1': 0, 'gallery-track-2': 0 };
 
         async function api(url, options = {}) {
@@ -802,6 +524,7 @@
             await cargarDatosDesdeNeon();
             await cargarContenidoEditable();
             await cargarGaleriaSemanas();
+            await cargarEntradasSecciones();
 
             if (session) {
                 aplicarSesion();
@@ -967,6 +690,8 @@
 
             renderOpiniones();
             renderFotosUsuario();
+            renderEntradasSeccion('bitacora');
+            renderEntradasSeccion('cronograma');
         }
 
         function logout() {
@@ -986,6 +711,116 @@
 
             if (id === 'registros') {
                 renderRegistros();
+            }
+        }
+
+
+        async function cargarEntradasSecciones() {
+            try {
+                bitacoraData = await api("/api/entradas/bitacora");
+                cronogramaData = await api("/api/entradas/cronograma");
+
+                renderEntradasSeccion('bitacora');
+                renderEntradasSeccion('cronograma');
+            } catch (error) {
+                console.error(error);
+                alert("No se pudieron cargar Bitácora/Cronograma desde Neon. Revisa las rutas /api/entradas en server.js.");
+            }
+        }
+
+        function leerImagenComoBase64(input) {
+            return new Promise((resolve) => {
+                if (!input || !input.files || !input.files[0]) {
+                    resolve("");
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = () => resolve("");
+                reader.readAsDataURL(input.files[0]);
+            });
+        }
+
+        async function agregarEntradaSeccion(seccion) {
+            const prefijo = seccion === 'bitacora' ? 'bitacora' : 'cronograma';
+            const titulo = document.getElementById(`${prefijo}-titulo`).value.trim();
+            const texto = document.getElementById(`${prefijo}-texto`).value.trim();
+            const inputImagen = document.getElementById(`${prefijo}-imagen`);
+
+            if (!titulo || !texto) {
+                alert("Completa el título y el texto.");
+                return;
+            }
+
+            const imagen = await leerImagenComoBase64(inputImagen);
+
+            try {
+                await api("/api/entradas", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        seccion,
+                        usuario: session ? session.user : "Invitado",
+                        titulo,
+                        texto,
+                        imagen
+                    })
+                });
+
+                document.getElementById(`${prefijo}-titulo`).value = "";
+                document.getElementById(`${prefijo}-texto`).value = "";
+                inputImagen.value = "";
+
+                await cargarEntradasSecciones();
+                alert("Información guardada en Neon correctamente.");
+            } catch (error) {
+                console.error(error);
+                alert("No se pudo guardar en Neon. Revisa Render Logs y la ruta /api/entradas.");
+            }
+        }
+
+        function renderEntradasSeccion(seccion) {
+            const contenedorId = seccion === 'bitacora' ? 'grid-bitacora' : 'grid-crono';
+            const contenedor = document.getElementById(contenedorId);
+            if (!contenedor) return;
+
+            const datos = seccion === 'bitacora' ? bitacoraData : cronogramaData;
+            const esAdmin = session && session.isAdmin;
+
+            if (!datos || datos.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="card">
+                        <h3>Aún no hay registros</h3>
+                        <div class="rich-editor">Cuando un usuario guarde información, aparecerá aquí.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            contenedor.innerHTML = datos.map(item => `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                        <h3>${item.titulo || 'Sin título'}</h3>
+                        ${esAdmin ? `<button class="btn-danger" onclick="borrarEntradaSeccion(${item.id})">BORRAR</button>` : ""}
+                    </div>
+                    <div class="rich-editor">${item.texto || ''}</div>
+                    ${item.imagen ? `<img class="img-preview" src="${item.imagen}">` : ""}
+                    <p style="font-size:0.8rem; opacity:0.8; margin-top:10px;">
+                        Usuario: <b>${item.usuario || 'Invitado'}</b> ${item.fecha ? ' | ' + new Date(item.fecha).toLocaleString() : ''}
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        async function borrarEntradaSeccion(id) {
+            if (!confirm("¿Deseas borrar este registro?")) return;
+
+            try {
+                await api("/api/entradas/" + id, { method: "DELETE" });
+                await cargarEntradasSecciones();
+            } catch (error) {
+                console.error(error);
+                alert("No se pudo borrar el registro.");
             }
         }
 
