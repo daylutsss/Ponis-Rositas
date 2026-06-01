@@ -71,6 +71,7 @@ nav{
     color:white;
     font-weight:bold;
     cursor:pointer;
+    transition:0.3s;
 }
 
 .nav-btn:hover{
@@ -112,7 +113,7 @@ nav{
     color:white;
 }
 
-/* 🟩 CUADRO GRANDE NUEVO */
+/* CUADRO GRANDE */
 .intro-box{
     width:85%;
     margin:60px auto;
@@ -154,6 +155,23 @@ nav{
 @media (max-width:600px){
     .intro-grid{
         grid-template-columns:1fr;
+    }
+
+    .hero-content h1{
+        font-size:3rem;
+    }
+
+    nav{
+        padding:15px 5%;
+    }
+
+    .logo{
+        font-size:1.1rem;
+    }
+
+    .nav-btn{
+        padding:10px 16px;
+        font-size:0.8rem;
     }
 }
 
@@ -198,6 +216,188 @@ nav{
     padding:20px;
 }
 
+/* OPINIONES */
+.opiniones-section{
+    padding:80px 10% 30px;
+}
+
+.opiniones-box{
+    max-width:1000px;
+    margin:auto;
+    background:rgba(255,255,255,0.95);
+    padding:35px;
+    border-radius:30px;
+    box-shadow:0 12px 35px rgba(0,0,0,0.14);
+    border:1px solid var(--border);
+}
+
+.opiniones-header{
+    text-align:center;
+    margin-bottom:25px;
+}
+
+.opiniones-header h2{
+    color:var(--accent-dark);
+    font-size:2.3rem;
+    margin-bottom:10px;
+}
+
+.rating-resumen{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:15px;
+    flex-wrap:wrap;
+    margin-top:15px;
+}
+
+.rating-card{
+    background:#f8f4df;
+    padding:14px 22px;
+    border-radius:18px;
+    border:1px solid rgba(140,0,4,0.12);
+    font-weight:bold;
+}
+
+.opinion-form{
+    background:#f8f4df;
+    padding:25px;
+    border-radius:22px;
+    margin:25px 0;
+    border:1px solid rgba(140,0,4,0.12);
+}
+
+.form-row{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:12px;
+    margin-bottom:12px;
+}
+
+.opinion-input,
+.opinion-textarea{
+    width:100%;
+    padding:13px 15px;
+    border-radius:14px;
+    border:1px solid rgba(62,39,35,0.25);
+    font-family:'Poppins',sans-serif;
+    font-size:0.95rem;
+    outline:none;
+}
+
+.opinion-input:focus,
+.opinion-textarea:focus{
+    border-color:var(--accent-dark);
+}
+
+.opinion-textarea{
+    min-height:110px;
+    resize:vertical;
+}
+
+.anonimo-btn{
+    background:var(--accent);
+    color:var(--text);
+    border:none;
+    padding:0 18px;
+    border-radius:14px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.estrellas-box{
+    text-align:center;
+    margin:18px 0;
+}
+
+.estrella{
+    font-size:36px;
+    cursor:pointer;
+    transition:0.2s;
+    filter:grayscale(100%);
+    opacity:0.45;
+}
+
+.estrella.activa{
+    filter:grayscale(0%);
+    opacity:1;
+}
+
+.estrella:hover{
+    transform:scale(1.18);
+}
+
+.submit-opinion{
+    width:100%;
+    background:var(--accent-dark);
+    color:white;
+    border:none;
+    padding:14px 20px;
+    border-radius:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+    font-size:1rem;
+}
+
+.submit-opinion:hover{
+    background:var(--danger);
+    transform:scale(1.02);
+}
+
+.lista-opiniones{
+    margin-top:25px;
+    display:grid;
+    gap:15px;
+}
+
+.opinion-card{
+    background:white;
+    border-radius:20px;
+    padding:18px;
+    border:1px solid var(--border);
+    box-shadow:0 5px 16px rgba(0,0,0,0.06);
+}
+
+.opinion-card-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+}
+
+.opinion-nombre{
+    font-weight:bold;
+    color:var(--accent-dark);
+}
+
+.opinion-estrellas{
+    font-size:1.1rem;
+}
+
+.opinion-vacia{
+    text-align:center;
+    padding:25px;
+    background:#f8f4df;
+    border-radius:18px;
+}
+
+@media (max-width:650px){
+    .form-row{
+        grid-template-columns:1fr;
+    }
+
+    .opiniones-box{
+        padding:22px;
+    }
+
+    .opiniones-header h2{
+        font-size:1.8rem;
+    }
+}
+
 /* FOOTER */
 footer{
     background:var(--accent-dark);
@@ -226,7 +426,7 @@ INGRESAR
 </div>
 </section>
 
-<!-- 🟩 CUADRO GRANDE AGREGADO -->
+<!-- CUADRO GRANDE AGREGADO -->
 <div class="intro-box">
 Llevar una vida saludable es un conjunto de hábitos diarios que ayudan a que el cuerpo y la mente funcionen mejor, previenen enfermedades y mejoran la calidad de vida. No se trata solo de “no enfermarse”, sino de tener energía, buen ánimo, concentración y bienestar a largo plazo.
 </div>
@@ -322,9 +522,145 @@ Llevar una vida saludable es un conjunto de hábitos diarios que ayudan a que el
 
 </section>
 
+<!-- OPINIONES CON ESTRELLAS -->
+<section class="opiniones-section" id="opiniones">
+    <div class="opiniones-box">
+        <div class="opiniones-header">
+            <h2>💬 Deja tu opinión</h2>
+            <p>Cuéntanos qué te pareció la página y califícanos con estrellitas.</p>
+
+            <div class="rating-resumen">
+                <div class="rating-card" id="promedio-estrellas">⭐ 5.0 / 5</div>
+                <div class="rating-card" id="total-opiniones">Basado en 0 opiniones</div>
+            </div>
+        </div>
+
+        <div class="opinion-form">
+            <div class="form-row">
+                <input type="text" id="nombreOpinion" class="opinion-input" placeholder="Tu nombre o usa Anónimo">
+                <button class="anonimo-btn" onclick="ponerAnonimo()">Anónimo</button>
+            </div>
+
+            <textarea id="textoOpinion" class="opinion-textarea" placeholder="Escribe aquí tu opinión..."></textarea>
+
+            <div class="estrellas-box">
+                <div id="estrellasSeleccion">
+                    <span class="estrella activa" onclick="seleccionarEstrellas(1)">⭐</span>
+                    <span class="estrella activa" onclick="seleccionarEstrellas(2)">⭐</span>
+                    <span class="estrella activa" onclick="seleccionarEstrellas(3)">⭐</span>
+                    <span class="estrella activa" onclick="seleccionarEstrellas(4)">⭐</span>
+                    <span class="estrella activa" onclick="seleccionarEstrellas(5)">⭐</span>
+                </div>
+                <p id="textoCalificacion">5 estrellas</p>
+            </div>
+
+            <button class="submit-opinion" onclick="guardarOpinion()">
+                ENVIAR OPINIÓN
+            </button>
+        </div>
+
+        <div id="listaOpiniones" class="lista-opiniones"></div>
+    </div>
+</section>
+
 <footer>
 © Ponis Rositas 🦄
 </footer>
+
+<script>
+
+let calificacionActual = 5;
+let opiniones = JSON.parse(localStorage.getItem("opinionesBotanica")) || [];
+
+function ponerAnonimo(){
+    document.getElementById("nombreOpinion").value = "Anónimo";
+}
+
+function seleccionarEstrellas(valor){
+    calificacionActual = valor;
+
+    const estrellas = document.querySelectorAll("#estrellasSeleccion .estrella");
+
+    estrellas.forEach((estrella, index) => {
+        if(index < valor){
+            estrella.classList.add("activa");
+        }else{
+            estrella.classList.remove("activa");
+        }
+    });
+
+    document.getElementById("textoCalificacion").innerText = valor + (valor === 1 ? " estrella" : " estrellas");
+}
+
+function guardarOpinion(){
+    const nombre = document.getElementById("nombreOpinion").value.trim() || "Anónimo";
+    const texto = document.getElementById("textoOpinion").value.trim();
+
+    if(!texto){
+        alert("Escribe una opinión antes de enviarla.");
+        return;
+    }
+
+    opiniones.unshift({
+        nombre: nombre,
+        texto: texto,
+        estrellas: calificacionActual,
+        fecha: new Date().toLocaleString()
+    });
+
+    localStorage.setItem("opinionesBotanica", JSON.stringify(opiniones));
+
+    document.getElementById("nombreOpinion").value = "";
+    document.getElementById("textoOpinion").value = "";
+    seleccionarEstrellas(5);
+
+    mostrarOpiniones();
+}
+
+function mostrarOpiniones(){
+    const contenedor = document.getElementById("listaOpiniones");
+    contenedor.innerHTML = "";
+
+    if(opiniones.length === 0){
+        contenedor.innerHTML = `
+            <div class="opinion-vacia">
+                Aún no hay opiniones. Sé la primera persona en dejar una calificación ⭐
+            </div>
+        `;
+
+        document.getElementById("promedio-estrellas").innerText = "⭐ 5.0 / 5";
+        document.getElementById("total-opiniones").innerText = "Basado en 0 opiniones";
+        return;
+    }
+
+    let suma = 0;
+
+    opiniones.forEach(opinion => {
+        suma += Number(opinion.estrellas);
+
+        const estrellasTexto = "⭐".repeat(opinion.estrellas);
+
+        contenedor.innerHTML += `
+            <div class="opinion-card animate__animated animate__fadeInUp">
+                <div class="opinion-card-top">
+                    <span class="opinion-nombre">${opinion.nombre}</span>
+                    <span class="opinion-estrellas">${estrellasTexto}</span>
+                </div>
+                <p>${opinion.texto}</p>
+                <small>${opinion.fecha || ""}</small>
+            </div>
+        `;
+    });
+
+    const promedio = (suma / opiniones.length).toFixed(1);
+
+    document.getElementById("promedio-estrellas").innerText = `⭐ ${promedio} / 5`;
+    document.getElementById("total-opiniones").innerText = `Basado en ${opiniones.length} ${opiniones.length === 1 ? "opinión" : "opiniones"}`;
+}
+
+mostrarOpiniones();
+
+</script>
 
 </body>
 </html>
