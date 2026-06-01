@@ -160,7 +160,7 @@
     <div id="login-overlay">
         <div class="login-card animate__animated animate__fadeInDown">
             <h2 style="color: var(--accent); margin-bottom: 20px;">🌿 BOTÁNICA PRO</h2>
-            <input type="text" id="user-in" class="input-std" style="margin-bottom:8px" placeholder="Usuario">
+            <input type="text" id="user-in" class="input-std" style="margin-bottom:8px" placeholder="Nombre completo (nombre y apellido)">
            
             <div class="input-group">
                 <input type="password" id="pass-in" class="input-std" placeholder="Contraseña">
@@ -200,7 +200,7 @@
     <main class="main-content">
         <div class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></div>
         <header style="margin-bottom: 20px;">
-            <h1 id="welcome-txt" style="margin:0;">Bienvenida</h1>
+            <h1 id="welcome-txt" style="margin:0;">Bienvenid@</h1>
             <span id="badge-admin" class="hidden" style="color:var(--danger); font-weight:bold; font-size:0.8rem;">[ MODO ADMINISTRADORA ]</span>
         </header>
 
@@ -646,19 +646,56 @@
             icon.classList.toggle('fa-eye-slash');
         }
 
+        function normalizarTexto(texto) {
+            return (texto || "")
+                .trim()
+                .replace(/\s+/g, " ")
+                .toLowerCase();
+        }
+
+        function tieneNombreYApellido(nombre) {
+            const limpio = (nombre || "").trim().replace(/\s+/g, " ");
+            return limpio.split(" ").filter(parte => parte.length >= 2).length >= 2;
+        }
+
         async function login() {
-            const user = (document.getElementById('user-in').value || "Paola").trim();
-            const pass = document.getElementById('pass-in').value || "---";
+            const user = document.getElementById('user-in').value.trim().replace(/\s+/g, " ");
+            const pass = document.getElementById('pass-in').value;
             const role = document.getElementById('role-in').value;
             const master = document.getElementById('master-key').value;
+
+            if (!user) {
+                return alert("Escribe tu nombre completo para ingresar.");
+            }
+
+            if (!tieneNombreYApellido(user)) {
+                return alert("Error: debes escribir nombre y apellido separados por un espacio. Ejemplo: Ana López");
+            }
+
+            if (!pass) {
+                return alert("Escribe tu contraseña para ingresar.");
+            }
 
             if (role === 'admin' && master !== 'ponis_rositas') {
                 return alert("Clave Maestra Incorrecta");
             }
 
-            session = { user, role, isAdmin: role === 'admin' };
-
             try {
+                await cargarDatosDesdeNeon();
+
+                const usuarioNormalizado = normalizarTexto(user);
+                const accesoExistente = db.accesos.find(a => normalizarTexto(a.user) === usuarioNormalizado);
+
+                if (accesoExistente && accesoExistente.pass !== pass) {
+                    return alert("Este nombre ya está registrado. Debes ingresar con la misma contraseña que usaste anteriormente.");
+                }
+
+                if (accesoExistente && accesoExistente.role !== role) {
+                    return alert("Este nombre ya está registrado con otro tipo de acceso. Selecciona el mismo tipo de acceso que usaste anteriormente.");
+                }
+
+                session = { user, role, isAdmin: role === 'admin' };
+
                 await api("/api/accesos", {
                     method: "POST",
                     body: JSON.stringify({
@@ -674,7 +711,7 @@
 
             } catch (error) {
                 console.error(error);
-                alert("No se pudo guardar el acceso en Neon.");
+                alert("No se pudo validar o guardar el acceso en Neon.");
             }
         }
 
@@ -685,7 +722,7 @@
                 document.querySelectorAll('.admin-only, #badge-admin').forEach(el => el.classList.remove('hidden'));
             }
 
-            document.getElementById('welcome-txt').innerText = "Bienvenida, " + session.user;
+            document.getElementById('welcome-txt').innerText = "Bienvenid@, " + session.user;
             document.getElementById('login-overlay').classList.add('hidden');
 
             renderOpiniones();
