@@ -192,6 +192,7 @@
             <button id="btn-tab-salud" class="nav-btn" onclick="showTab('salud', this)"><i class="fa-solid fa-heart-pulse"></i> Salud</button>
             <button id="btn-tab-apis" class="nav-btn" onclick="showTab('apis', this)"><i class="fa-solid fa-cloud-sun"></i> APIs</button>
             <button id="btn-tab-registros" class="nav-btn admin-only hidden" onclick="showTab('registros', this)"><i class="fa-solid fa-folder-open"></i> Registros</button>
+            <button id="btn-tab-aira" class="nav-btn admin-only hidden" onclick="abrirAiraAdmin()"><i class="fa-solid fa-seedling"></i> AIRA</button>
         </nav>
         <button class="btn-accent" style="margin-top:auto; background:var(--danger);" onclick="logout()">CERRAR SESIÓN</button>
     </aside>
@@ -1264,6 +1265,18 @@
 
             track.style.transform = `translateX(-${scrollOffsets[trackId]}px)`;
         }
+
+
+        function abrirAiraAdmin() {
+            if (!session || !session.isAdmin) {
+                alert("Solo la administradora puede entrar al apartado AIRA para agregar productos.");
+                return;
+            }
+
+            localStorage.setItem('botanica_session', JSON.stringify(session));
+            window.location.href = "index001.html#aira";
+        }
+
 
         /* =========================
            APIs EXTERNAS
