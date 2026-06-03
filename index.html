@@ -738,6 +738,110 @@ body.aira-admin .aira-public-note{
     display:none;
 }
 
+
+/* VIDEO ANUNCIO FLOTANTE */
+.video-ad{
+    position:fixed;
+    right:22px;
+    bottom:22px;
+    width:300px;
+    background:white;
+    border-radius:22px;
+    box-shadow:0 12px 35px rgba(0,0,0,.28);
+    border:2px solid rgba(140,0,4,.18);
+    overflow:hidden;
+    z-index:2000;
+    transition:.3s;
+}
+
+.video-ad.minimized{
+    width:190px;
+}
+
+.video-ad-header{
+    background:#8C0004;
+    color:white;
+    padding:10px 12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-weight:bold;
+    font-size:.85rem;
+}
+
+.video-ad-actions{
+    display:flex;
+    gap:8px;
+}
+
+.video-ad-actions button{
+    background:rgba(255,255,255,.18);
+    color:white;
+    border:none;
+    width:25px;
+    height:25px;
+    border-radius:50%;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.video-ad video{
+    width:100%;
+    display:block;
+    max-height:360px;
+    object-fit:cover;
+    background:#000;
+}
+
+.video-ad-caption{
+    padding:10px 12px;
+    color:#3E2723;
+    font-size:.85rem;
+    background:#f8f4df;
+}
+
+.video-ad.minimized video,
+.video-ad.minimized .video-ad-caption{
+    display:none;
+}
+
+@media(max-width:650px){
+    .video-ad{
+        width:230px;
+        right:12px;
+        bottom:12px;
+    }
+
+    .video-ad.minimized{
+        width:165px;
+    }
+}
+
+/* REDES SOCIALES FOOTER */
+.footer-social{
+    margin-top:12px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.footer-social a{
+    color:white;
+    text-decoration:none;
+    font-weight:bold;
+    background:rgba(255,255,255,.14);
+    padding:8px 14px;
+    border-radius:20px;
+    transition:.3s;
+}
+
+.footer-social a:hover{
+    background:#E98611;
+    transform:scale(1.05);
+}
+
 /* FOOTER */
 footer{
     background:var(--accent-dark);
@@ -751,6 +855,25 @@ footer{
 </head>
 
 <body>
+
+
+<!-- VIDEO ANUNCIO FLOTANTE -->
+<div id="videoAd" class="video-ad">
+    <div class="video-ad-header">
+        <span>✨ AIRA Hair Care</span>
+        <div class="video-ad-actions">
+            <button onclick="minimizarVideoAd()" title="Minimizar">−</button>
+            <button onclick="cerrarVideoAd()" title="Cerrar">×</button>
+        </div>
+    </div>
+
+    <video src="videooooo.mp4" controls autoplay muted loop playsinline></video>
+
+    <div class="video-ad-caption">
+        Conoce más de nuestros productos AIRA.
+    </div>
+</div>
+
 
 <nav>
 <div class="brand-group">
@@ -1025,10 +1148,28 @@ margin:0;
 </section>
 
 <footer>
-© Ponis Rositas 🦄
+    <div>© Ponis Rositas 🦄</div>
+    <div class="footer-social">
+        <span>Redes sociales:</span>
+        <a href="https://www.instagram.com/aira_hair.care/?hl=es" target="_blank" rel="noopener noreferrer">
+            <i class="fa-brands fa-instagram"></i> @aira_hair.care
+        </a>
+    </div>
 </footer>
 
 <script>
+
+
+function cerrarVideoAd(){
+    const ad = document.getElementById("videoAd");
+    if(ad) ad.style.display = "none";
+}
+
+function minimizarVideoAd(){
+    const ad = document.getElementById("videoAd");
+    if(ad) ad.classList.toggle("minimized");
+}
+
 
 
 
