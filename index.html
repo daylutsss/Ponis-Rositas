@@ -701,6 +701,43 @@ nav{
     padding:25px;
 }
 
+
+/* CONTROL ADMINISTRADOR AIRA */
+.admin-aira-only{
+    display:none;
+}
+
+body.aira-admin .admin-aira-only{
+    display:block;
+}
+
+.aira-admin-alert{
+    background:#f8f4df;
+    border-left:8px solid #B8C944;
+    padding:18px;
+    border-radius:16px;
+    margin-bottom:25px;
+    color:#8C0004;
+    font-weight:600;
+}
+
+body:not(.aira-admin) .aira-admin-alert{
+    display:none;
+}
+
+.aira-public-note{
+    background:#f8f4df;
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:25px;
+    text-align:center;
+    color:#3E2723;
+}
+
+body.aira-admin .aira-public-note{
+    display:none;
+}
+
 /* FOOTER */
 footer{
     background:var(--accent-dark);
@@ -934,7 +971,11 @@ margin:0;
             </p>
         </div>
 
-        <div class="aira-form">
+        <div class="aira-public-note">Los visitantes pueden consultar los productos publicados. Para agregar o editar productos se necesita ingresar como administradora.</div>
+
+        <div class="aira-admin-alert">Modo administradora activo: puedes agregar productos y contenido multimedia para AIRA.</div>
+
+        <div class="aira-form admin-aira-only">
             <h3 style="color:#8C0004; margin-bottom:15px;">Agregar información de producto</h3>
 
             <div class="aira-form-grid">
@@ -962,7 +1003,7 @@ margin:0;
                 ferias, presentaciones o actividades relacionadas con AIRA.
             </p>
 
-            <div class="aira-media-form">
+            <div class="aira-media-form admin-aira-only">
                 <h3 style="color:#8C0004; margin-bottom:15px;">Agregar foto o video</h3>
 
                 <div class="aira-form-grid">
@@ -990,6 +1031,27 @@ margin:0;
 <script>
 
 
+
+function obtenerSesionAira(){
+    try{
+        return JSON.parse(localStorage.getItem("botanica_session")) || null;
+    }catch(e){
+        return null;
+    }
+}
+
+function aplicarPermisosAira(){
+    const sesion = obtenerSesionAira();
+    const esAdmin = sesion && sesion.isAdmin === true;
+
+    if(esAdmin){
+        document.body.classList.add("aira-admin");
+    }else{
+        document.body.classList.remove("aira-admin");
+    }
+}
+
+
 let productosAira = JSON.parse(localStorage.getItem("productosAira")) || [];
 
 let mediaAira = JSON.parse(localStorage.getItem("mediaAira")) || [];
@@ -1010,6 +1072,7 @@ function leerArchivoBase64(input){
 
 
 function mostrarPaginaAira(){
+    aplicarPermisosAira();
     document.getElementById("pagina-principal").classList.add("hidden-page");
     document.getElementById("pagina-aira").classList.add("active");
     window.scrollTo({top:0, behavior:"smooth"});
@@ -1023,6 +1086,12 @@ function mostrarPaginaPrincipal(){
 }
 
 async function guardarProductoAira(){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede agregar productos. Inicia sesión como administradora en el sistema.");
+        return;
+    }
+
     const producto = document.getElementById("airaProducto").value.trim();
     const categoria = document.getElementById("airaCategoria").value.trim();
     const descripcion = document.getElementById("airaDescripcion").value.trim();
@@ -1079,6 +1148,12 @@ function mostrarProductosAira(){
 
 
 async function guardarMediaAira(){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede agregar fotos o videos. Inicia sesión como administradora en el sistema.");
+        return;
+    }
+
     const titulo = document.getElementById("airaMediaTitulo").value.trim();
     const descripcion = document.getElementById("airaMediaDescripcion").value.trim();
     const inputArchivo = document.getElementById("airaMediaArchivo");
@@ -1179,9 +1254,14 @@ function guardarOpinion(){
     document.getElementById("textoOpinion").value = "";
     seleccionarEstrellas(5);
 
-    mostrarProductosAira();
+    aplicarPermisosAira();
+mostrarProductosAira();
 mostrarMediaAira();
 mostrarOpiniones();
+
+if(window.location.hash === "#aira"){
+    mostrarPaginaAira();
+}
 }
 
 function mostrarOpiniones(){
