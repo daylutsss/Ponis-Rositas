@@ -691,8 +691,8 @@ body:not(.aira-admin) .aira-product-actions{
 }
 
 .aira-product-img{
-    width:4cm;
-    height:4cm;
+    width:5cm;
+    height:5cm;
     max-width:100%;
     object-fit:cover;
     border-radius:16px;
@@ -751,14 +751,16 @@ body:not(.aira-admin) .aira-product-actions{
     border:1px solid var(--border);
 }
 
-.aira-media-card img,
-.aira-media-card video{
-    width:100%;
-    height:240px;
-    object-fit:cover;
+.aira-media-card img{
+    width:5cm;
+    height:5cm;
+    max-width:100%;
+    object-fit:contain;
     border-radius:18px;
     display:block;
-    margin-bottom:12px;
+    margin:0 auto 12px;
+    background:#fafafa;
+    border:1px solid var(--border);
 }
 
 .aira-media-card h3{
@@ -1579,25 +1581,29 @@ margin:0;
         <div id="listaProductosAira" class="aira-products"></div>
 
         <div class="aira-media-section">
-            <h2 style="color:#8C0004; text-align:center; margin-bottom:10px;">📸 Fotos y videos de AIRA</h2>
+            <h2 style="color:#8C0004; text-align:center; margin-bottom:10px;">📊 Diagramas de Flujo</h2>
             <p style="text-align:center; max-width:800px; margin:0 auto 20px; line-height:1.7;">
-                En este apartado puedes agregar evidencias generales de los productos, procesos, exposiciones,
-                ferias, presentaciones o actividades relacionadas con AIRA.
+                En este apartado puedes agregar los diagramas de flujo del proyecto AIRA para mostrar el proceso,
+                los pasos de elaboración y la organización de las actividades.
             </p>
 
             <div class="aira-media-form admin-aira-only">
-                <h3 style="color:#8C0004; margin-bottom:15px;">Agregar foto o video</h3>
+                <h3 style="color:#8C0004; margin-bottom:15px;">Agregar diagrama de flujo</h3>
 
                 <div class="aira-form-grid">
-                    <input type="text" id="airaMediaTitulo" class="aira-input" placeholder="Título o nombre de la evidencia">
+                    <input type="text" id="airaMediaTitulo" class="aira-input" placeholder="Título del diagrama">
                     <input type="text" id="airaMediaDescripcion" class="aira-input" placeholder="Descripción breve">
                 </div>
 
-                <label class="aira-file-label" for="airaMediaArchivo">📁 Selecciona una imagen o video</label>
-                <input type="file" id="airaMediaArchivo" class="aira-input" accept="image/*,video/*">
+                <label class="aira-file-label" for="airaMediaArchivo">📁 Selecciona una imagen del diagrama</label>
+                <input type="file" id="airaMediaArchivo" class="aira-input" accept="image/*">
 
-                <button class="aira-submit" onclick="guardarMediaAira()">
-                    GUARDAR FOTO / VIDEO
+                <button class="aira-submit" id="airaGuardarMediaBtn" onclick="guardarMediaAira()">
+                    GUARDAR DIAGRAMA
+                </button>
+
+                <button class="aira-cancel-edit hidden" id="airaCancelarMediaBtn" onclick="cancelarEdicionMediaAira()">
+                    CANCELAR EDICIÓN
                 </button>
             </div>
 
@@ -1977,7 +1983,20 @@ async function eliminarProductoAira(id){
 }
 
 
-let mediaAira = JSON.parse(localStorage.getItem("mediaAira")) || [];
+function normalizarMediaAira(item, index = 0){
+    return {
+        id: item.id || Date.now() + index,
+        titulo: item.titulo || "Diagrama de flujo",
+        descripcion: item.descripcion || "",
+        tipo: "imagen",
+        src: item.src || "",
+        fecha: item.fecha || "",
+        fechaEdicion: item.fechaEdicion || ""
+    };
+}
+
+let mediaAira = (JSON.parse(localStorage.getItem("mediaAira")) || []).map(normalizarMediaAira);
+let mediaAiraEditandoId = null;
 let liveAira = JSON.parse(localStorage.getItem("liveAira")) || [];
 
 function leerArchivoBase64(input){
@@ -2063,35 +2082,124 @@ function mostrarPaginaLive(){
 async function guardarMediaAira(){
     const sesion = obtenerSesionAira();
     if(!sesion || sesion.isAdmin !== true){
-        alert("Solo la administradora puede agregar fotos o videos. Inicia sesión como administradora en el sistema.");
+        alert("Solo la administradora puede agregar o editar diagramas de flujo. Inicia sesión como administradora en el sistema.");
         return;
     }
 
     const titulo = document.getElementById("airaMediaTitulo").value.trim();
     const descripcion = document.getElementById("airaMediaDescripcion").value.trim();
     const inputArchivo = document.getElementById("airaMediaArchivo");
+    const archivoSeleccionado = inputArchivo.files && inputArchivo.files[0];
 
-    if(!titulo || !inputArchivo.files || !inputArchivo.files[0]){
-        alert("Escribe un título y selecciona una imagen o video.");
+    if(!titulo){
+        alert("Escribe el título del diagrama.");
         return;
     }
 
-    const archivo = inputArchivo.files[0];
-    const src = await leerArchivoBase64(inputArchivo);
+    if(mediaAiraEditandoId === null && !archivoSeleccionado){
+        alert("Selecciona una imagen para el diagrama.");
+        return;
+    }
 
-    mediaAira.unshift({
-        titulo,
-        descripcion: descripcion || "Evidencia AIRA",
-        tipo: archivo.type.startsWith("video") ? "video" : "imagen",
-        src,
-        fecha: new Date().toLocaleString()
-    });
+    if(archivoSeleccionado && !archivoSeleccionado.type.startsWith("image/")){
+        alert("Solo puedes subir imágenes para los diagramas de flujo.");
+        return;
+    }
+
+    const nuevaImagen = archivoSeleccionado ? await leerArchivoBase64(inputArchivo) : "";
+
+    if(mediaAiraEditandoId !== null){
+        const index = mediaAira.findIndex(item => String(item.id) === String(mediaAiraEditandoId));
+        if(index === -1){
+            alert("No se encontró el diagrama para editar.");
+            cancelarEdicionMediaAira();
+            return;
+        }
+
+        mediaAira[index] = {
+            ...mediaAira[index],
+            titulo,
+            descripcion: descripcion || "Diagrama de flujo AIRA",
+            tipo: "imagen",
+            src: nuevaImagen || mediaAira[index].src,
+            fechaEdicion: new Date().toLocaleString()
+        };
+    }else{
+        mediaAira.unshift({
+            id: Date.now(),
+            titulo,
+            descripcion: descripcion || "Diagrama de flujo AIRA",
+            tipo: "imagen",
+            src: nuevaImagen,
+            fecha: new Date().toLocaleString(),
+            fechaEdicion: ""
+        });
+    }
 
     localStorage.setItem("mediaAira", JSON.stringify(mediaAira));
+    limpiarFormularioMediaAira();
+    mostrarMediaAira();
+}
 
+function limpiarFormularioMediaAira(){
     document.getElementById("airaMediaTitulo").value = "";
     document.getElementById("airaMediaDescripcion").value = "";
-    inputArchivo.value = "";
+    document.getElementById("airaMediaArchivo").value = "";
+    document.getElementById("airaGuardarMediaBtn").innerText = "GUARDAR DIAGRAMA";
+    document.getElementById("airaCancelarMediaBtn").classList.add("hidden");
+    document.querySelector(".aira-media-form").classList.remove("aira-form-editing");
+    mediaAiraEditandoId = null;
+}
+
+function cancelarEdicionMediaAira(){
+    limpiarFormularioMediaAira();
+}
+
+function editarMediaAira(id){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede editar diagramas.");
+        return;
+    }
+
+    const diagrama = mediaAira.find(item => String(item.id) === String(id));
+    if(!diagrama){
+        alert("No se encontró el diagrama.");
+        return;
+    }
+
+    mediaAiraEditandoId = id;
+    document.getElementById("airaMediaTitulo").value = diagrama.titulo || "";
+    document.getElementById("airaMediaDescripcion").value = diagrama.descripcion || "";
+    document.getElementById("airaMediaArchivo").value = "";
+    document.getElementById("airaGuardarMediaBtn").innerText = "GUARDAR CAMBIOS DEL DIAGRAMA";
+    document.getElementById("airaCancelarMediaBtn").classList.remove("hidden");
+    document.querySelector(".aira-media-form").classList.add("aira-form-editing");
+
+    alert("Ya puedes editar el diagrama. Si no seleccionas otra imagen, se conserva la imagen actual.");
+    document.querySelector(".aira-media-form").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function eliminarMediaAira(id){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede eliminar diagramas.");
+        return;
+    }
+
+    const diagrama = mediaAira.find(item => String(item.id) === String(id));
+    const nombre = diagrama ? diagrama.titulo : "este diagrama";
+
+    if(!confirm(`¿Deseas eliminar "${nombre}"? Esta acción no se puede deshacer.`)){
+        return;
+    }
+
+    mediaAira = mediaAira.filter(item => String(item.id) !== String(id));
+    localStorage.setItem("mediaAira", JSON.stringify(mediaAira));
+
+    if(String(mediaAiraEditandoId) === String(id)){
+        limpiarFormularioMediaAira();
+    }
 
     mostrarMediaAira();
 }
@@ -2100,10 +2208,13 @@ function mostrarMediaAira(){
     const contenedor = document.getElementById("galeriaAira");
     if(!contenedor) return;
 
+    mediaAira = mediaAira.map(normalizarMediaAira);
+    localStorage.setItem("mediaAira", JSON.stringify(mediaAira));
+
     if(mediaAira.length === 0){
         contenedor.innerHTML = `
             <div class="aira-media-empty">
-                Aún no hay fotos o videos en la galería AIRA.
+                Aún no hay diagramas de flujo registrados.
             </div>
         `;
         return;
@@ -2111,18 +2222,23 @@ function mostrarMediaAira(){
 
     contenedor.innerHTML = mediaAira.map(item => `
         <div class="aira-media-card animate__animated animate__fadeInUp">
-            ${item.tipo === "video"
-                ? `<video src="${item.src}" controls></video>`
-                : `<img src="${item.src}" alt="${item.titulo}">`
-            }
+            ${item.src ? `<img src="${item.src}" alt="${item.titulo}">` : ""}
             <h3>${item.titulo}</h3>
             <p class="aira-product-description">${item.descripcion || ""}</p>
             ${item.fechaEdicion ? `<small>Editado: ${item.fechaEdicion}</small>` : ""}
             <small>${item.fecha || ""}</small>
+
+            <div class="aira-product-actions admin-aira-only">
+                <button class="aira-edit-btn" onclick="editarMediaAira('${item.id}')">
+                    <i class="fa-solid fa-pen-to-square"></i> Editar diagrama
+                </button>
+                <button class="aira-delete-btn" onclick="eliminarMediaAira('${item.id}')">
+                    <i class="fa-solid fa-trash"></i> Eliminar diagrama
+                </button>
+            </div>
         </div>
     `).join("");
 }
-
 
 async function guardarLiveAira(){
     const sesion = obtenerSesionAira();
