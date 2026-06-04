@@ -222,6 +222,18 @@
             opacity: 0.85;
             margin-top: 8px;
         }
+
+
+        /* --- RECETARIO INTERACTIVO --- */
+        .recetas-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr); gap: 20px; align-items: start; }
+        .recipe-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+        .recipe-list-btn { width: 100%; text-align: left; border: 1px solid var(--border); background: rgba(0,0,0,0.12); color: var(--text-main) !important; padding: 12px; border-radius: 12px; cursor: pointer; font-family: inherit; font-weight: 700; display:flex; justify-content:space-between; gap:10px; align-items:center; }
+        .recipe-list-btn:hover, .recipe-list-btn.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,145,0,0.15); }
+        .recipe-viewer h4 { color: var(--accent) !important; margin-bottom: 6px; }
+        .recipe-section { background: rgba(0,0,0,0.08); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 12px 0; white-space: pre-wrap; }
+        .recipe-opinion { border-bottom: 1px dashed var(--border); padding: 10px 0; }
+        .recipe-opinion:last-child { border-bottom: none; }
+        @media (max-width: 900px) { .recetas-layout { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -430,30 +442,32 @@
         </div>
 
         <div id="tab-recetas" class="tab-pane hidden">
-            <div class="card" id="card-recetas-1">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 id="title-recetas" class="editable-title">RECETAS</h3>
-                    <div class="admin-only hidden">
-                        <button class="btn-accent" onclick="toggleEdit('editor-recetas','title-recetas',this)">EDITAR</button>
-                    </div>
+            <div class="recetas-layout">
+                <div class="card" id="card-recetas-form">
+                    <h3>🍃 Comparte tu receta con nosotros</h3>
+                    <p>Escribe una receta relacionada con productos naturales, lavanda, cuidado personal o alimentos saludables.</p>
+
+                    <input type="text" id="receta-nombre" class="input-std" placeholder="Nombre de la receta (obligatorio)">
+                    <input type="text" id="receta-autor" class="input-std" style="margin-top:10px;" placeholder="Tu nombre o equipo">
+                    <textarea id="receta-ingredientes" class="input-std" style="margin-top:10px; min-height:90px; resize:vertical;" placeholder="Ingredientes"></textarea>
+                    <textarea id="receta-preparacion" class="input-std" style="margin-top:10px; min-height:120px; resize:vertical;" placeholder="Preparación paso a paso"></textarea>
+                    <textarea id="receta-beneficios" class="input-std" style="margin-top:10px; min-height:70px; resize:vertical;" placeholder="Beneficios o uso de la receta"></textarea>
+
+                    <button class="btn-accent" style="margin-top:12px;" onclick="publicarReceta()">
+                        <i class="fa-solid fa-plus"></i> PUBLICAR RECETA
+                    </button>
                 </div>
-                <div id="editor-recetas" class="rich-editor">
-                    <p><b>Ingredientes:</b><br>- 2 cucharaditas de flores secas de lavanda culinaria.<br>- 1 taza de agua purificada.<br>- 1 cucharada de miel de abeja u opción vegetal.</p>
-                    <p><b>Pasos para su preparación:</b><br>1. Pon a hervir el agua limpia en una olla pequeña.<br>2. Al soltar el hervor, apaga el fuego y añade las flores de lavanda.<br>3. Deja reposar la infusión tapada durante 5 minutos para conceptualizar sus propiedades.<br>4. Cuela el líquido en una taza, agrega la miel al gusto y consúmela tibia.</p>
-                    <p><b>Beneficios:</b> Excelente remedio natural para calmar el estrés diario, reducir dolores de cabeza leves, aliviar la digestión después de comer y ayudar a conciliar el sueño.</p>
+
+                <div class="card" id="card-ver-recetas">
+                    <h3>📖 Ver recetas</h3>
+                    <p>Selecciona una receta para ver sus ingredientes, preparación y opiniones.</p>
+                    <div id="lista-recetas" class="recipe-list"></div>
                 </div>
             </div>
 
-            <div class="card" id="card-recetas-opiniones">
-                <h3>💬 Opiniones de los Estudiantes sobre los Productos</h3>
-                <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
-                    <input type="text" id="alumno-nombre" class="input-std" placeholder="Tu Nombre y Grado (Ej: Sofía 5°B)">
-                    <textarea id="alumno-opinion" class="input-std" style="min-height:60px; font-family:inherit;" placeholder="Escribe aquí tu opinión sobre los productos del taller de botánica..."></textarea>
-                    <button class="btn-accent" style="width: fit-content;" onclick="agregarOpinion()">PUBLICAR OPINIÓN</button>
-                </div>
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-                <div id="lista-opiniones">
-                    </div>
+            <div id="visor-receta" class="card recipe-viewer">
+                <h3>Selecciona una receta</h3>
+                <div class="rich-editor">Aquí aparecerá la receta completa y sus opiniones.</div>
             </div>
         </div>
 
@@ -596,6 +610,8 @@
         let galeriaSemanas = {};
         let bitacoraData = [];
         let cronogramaData = [];
+        let recetasData = [];
+        let recetaSeleccionadaId = null;
         let cronogramaTabla = null;
         let cronogramaCeldaSeleccionada = null;
         let scrollOffsets = { 'gallery-track-1': 0, 'gallery-track-2': 0 };
@@ -623,6 +639,7 @@
             await cargarContenidoEditable();
             await cargarGaleriaSemanas();
             await cargarEntradasSecciones();
+            await cargarRecetario();
             await cargarCronogramaTabla();
 
             if (session) {
@@ -687,7 +704,7 @@
                 const recetas = await api("/api/contenido/recetas");
                 const polinizadores = await api("/api/contenido/polinizadores");
 
-                if (recetas) {
+                if (recetas && document.getElementById('title-recetas') && document.getElementById('editor-recetas')) {
                     document.getElementById('title-recetas').innerHTML = recetas.titulo || "RECETAS";
                     document.getElementById('editor-recetas').innerHTML = recetas.cuerpo || document.getElementById('editor-recetas').innerHTML;
                 }
@@ -1355,11 +1372,257 @@
             }
         }
 
+
+        function recetasDeEjemplo() {
+            return [
+                {
+                    id: 101,
+                    nombre: "Té relajante de lavanda y miel",
+                    autor: "Equipo Ponis Rositas",
+                    ingredientes: "• 1 taza de agua\n• 1 cucharadita de flores secas de lavanda\n• 1 cucharadita de miel\n• Unas gotas de limón opcional",
+                    preparacion: "1. Calienta el agua hasta que hierva.\n2. Apaga el fuego y agrega la lavanda.\n3. Deja reposar de 5 a 7 minutos.\n4. Cuela, agrega miel y sirve tibio.",
+                    beneficios: "Ayuda a relajarse, puede acompañar momentos de descanso y tiene un aroma agradable.",
+                    opiniones: [
+                        { nombre: "Sofía", texto: "Me gustó porque huele muy rico y es fácil de preparar." }
+                    ]
+                },
+                {
+                    id: 102,
+                    nombre: "Exfoliante natural de avena y coco",
+                    autor: "Equipo Botánico",
+                    ingredientes: "• 2 cucharadas de avena molida\n• 1 cucharada de aceite de coco\n• 1 cucharadita de miel\n• 1 pizca de lavanda molida opcional",
+                    preparacion: "1. Mezcla la avena con el aceite de coco.\n2. Agrega la miel y revuelve hasta formar una pasta.\n3. Aplica suavemente sobre la piel limpia.\n4. Retira con agua tibia.",
+                    beneficios: "La avena suaviza la piel, el aceite de coco aporta textura y la miel ayuda a hidratar.",
+                    opiniones: [
+                        { nombre: "Luis", texto: "La textura quedó bonita y sirve para explicar ingredientes naturales." }
+                    ]
+                },
+                {
+                    id: 103,
+                    nombre: "Barra hidratante sólida de karité y coco",
+                    autor: "Ponis Rositas Web",
+                    ingredientes: "• 3 cucharadas de manteca de karité\n• 1 cucharada de aceite de coco\n• 2 cucharadas de avena molida fina\n• 1 cucharada de maicena\n• Lavanda o romero secos molidos opcional",
+                    preparacion: "1. Derrite la manteca de karité.\n2. Agrega el aceite de coco y mezcla.\n3. Incorpora avena, maicena y lavanda o romero.\n4. Coloca en un molde presionando bien.\n5. Refrigera de 2 a 4 horas.",
+                    beneficios: "La manteca da estructura e hidrata; la avena acondiciona; la maicena mejora la textura.",
+                    opiniones: [
+                        { nombre: "Mariana", texto: "Me parece una receta completa para presentar como producto escolar." }
+                    ]
+                }
+            ];
+        }
+
+        async function cargarRecetario() {
+            try {
+                const data = await api("/api/contenido/recetario");
+
+                if (data && data.cuerpo) {
+                    recetasData = JSON.parse(data.cuerpo);
+                } else {
+                    recetasData = recetasDeEjemplo();
+                    await guardarRecetario();
+                }
+            } catch (error) {
+                console.error("No se cargó recetario desde Neon, usando respaldo local:", error);
+                const local = localStorage.getItem('botanica_recetario');
+                recetasData = local ? JSON.parse(local) : recetasDeEjemplo();
+            }
+
+            renderRecetario();
+        }
+
+        async function guardarRecetario() {
+            localStorage.setItem('botanica_recetario', JSON.stringify(recetasData));
+
+            try {
+                await api("/api/contenido/recetario", {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        titulo: "Recetario",
+                        cuerpo: JSON.stringify(recetasData)
+                    })
+                });
+            } catch (error) {
+                console.error("No se pudo guardar recetario en Neon. Se conservó en localStorage:", error);
+            }
+        }
+
+        function renderRecetario() {
+            const lista = document.getElementById('lista-recetas');
+            const visor = document.getElementById('visor-receta');
+            if (!lista || !visor) return;
+
+            if (!recetasData || recetasData.length === 0) {
+                lista.innerHTML = `<div class="rich-editor">Aún no hay recetas publicadas.</div>`;
+                visor.innerHTML = `<h3>Sin recetas</h3><div class="rich-editor">Cuando alguien publique una receta, aparecerá aquí.</div>`;
+                return;
+            }
+
+            lista.innerHTML = recetasData.map(r => `
+                <button class="recipe-list-btn ${r.id === recetaSeleccionadaId ? 'active' : ''}" onclick="abrirReceta(${r.id})">
+                    <span>${r.nombre}</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            `).join('');
+
+            if (!recetaSeleccionadaId || !recetasData.some(r => r.id === recetaSeleccionadaId)) {
+                recetaSeleccionadaId = recetasData[0].id;
+            }
+
+            abrirReceta(recetaSeleccionadaId, false);
+        }
+
+        function abrirReceta(id, actualizarLista = true) {
+            recetaSeleccionadaId = id;
+            const receta = recetasData.find(r => r.id === id);
+            const visor = document.getElementById('visor-receta');
+            if (!receta || !visor) return;
+
+            const esAdmin = session && session.isAdmin;
+            const opiniones = receta.opiniones || [];
+
+            visor.innerHTML = `
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                    <div>
+                        <h3>${receta.nombre}</h3>
+                        <p style="margin-top:-5px; opacity:0.85;">Compartida por: <b>${receta.autor || 'Invitado'}</b></p>
+                    </div>
+                    ${esAdmin ? `<button class="btn-danger" onclick="borrarReceta(${receta.id})">BORRAR RECETA</button>` : ''}
+                </div>
+
+                <h4>Ingredientes</h4>
+                <div class="recipe-section">${receta.ingredientes || 'Sin ingredientes registrados.'}</div>
+
+                <h4>Preparación</h4>
+                <div class="recipe-section">${receta.preparacion || 'Sin preparación registrada.'}</div>
+
+                <h4>Beneficios o uso</h4>
+                <div class="recipe-section">${receta.beneficios || 'Sin beneficios registrados.'}</div>
+
+                <hr style="border:0; border-top:1px solid var(--border); margin:18px 0;">
+                <h4>💬 Opiniones sobre esta receta</h4>
+                <div id="opiniones-receta-${receta.id}">
+                    ${opiniones.length ? opiniones.map((o, index) => `
+                        <div class="recipe-opinion">
+                            <p style="margin:0;"><b>${o.nombre || 'Anónimo'}:</b> ${o.texto || ''}</p>
+                            ${esAdmin ? `<button class="btn-danger" style="margin-top:6px; padding:2px 8px;" onclick="borrarOpinionReceta(${receta.id}, ${index})">Borrar opinión</button>` : ''}
+                        </div>
+                    `).join('') : `<div class="rich-editor">Aún no hay opiniones para esta receta.</div>`}
+                </div>
+
+                <div style="margin-top:15px; display:grid; grid-template-columns: 1fr; gap:8px;">
+                    <input type="text" id="opinion-nombre-${receta.id}" class="input-std" placeholder="Tu nombre">
+                    <textarea id="opinion-texto-${receta.id}" class="input-std" style="min-height:70px; resize:vertical;" placeholder="Escribe tu opinión sobre esta receta"></textarea>
+                    <button class="btn-accent" style="width:fit-content;" onclick="agregarOpinionReceta(${receta.id})">PUBLICAR OPINIÓN</button>
+                </div>
+            `;
+
+            if (actualizarLista) {
+                const lista = document.getElementById('lista-recetas');
+                if (lista) {
+                    lista.querySelectorAll('.recipe-list-btn').forEach(btn => btn.classList.remove('active'));
+                }
+                renderListaRecetasSolo();
+            }
+        }
+
+        function renderListaRecetasSolo() {
+            const lista = document.getElementById('lista-recetas');
+            if (!lista) return;
+            lista.innerHTML = recetasData.map(r => `
+                <button class="recipe-list-btn ${r.id === recetaSeleccionadaId ? 'active' : ''}" onclick="abrirReceta(${r.id})">
+                    <span>${r.nombre}</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            `).join('');
+        }
+
+        async function publicarReceta() {
+            const nombre = document.getElementById('receta-nombre').value.trim();
+            const autor = document.getElementById('receta-autor').value.trim();
+            const ingredientes = document.getElementById('receta-ingredientes').value.trim();
+            const preparacion = document.getElementById('receta-preparacion').value.trim();
+            const beneficios = document.getElementById('receta-beneficios').value.trim();
+
+            if (!nombre) {
+                alert("El nombre de la receta es obligatorio.");
+                return;
+            }
+
+            if (!ingredientes || !preparacion) {
+                alert("Completa al menos ingredientes y preparación.");
+                return;
+            }
+
+            const nueva = {
+                id: Date.now(),
+                nombre,
+                autor: autor || (session ? session.user : "Invitado"),
+                ingredientes,
+                preparacion,
+                beneficios,
+                opiniones: []
+            };
+
+            recetasData.unshift(nueva);
+            recetaSeleccionadaId = nueva.id;
+            await guardarRecetario();
+
+            document.getElementById('receta-nombre').value = '';
+            document.getElementById('receta-autor').value = '';
+            document.getElementById('receta-ingredientes').value = '';
+            document.getElementById('receta-preparacion').value = '';
+            document.getElementById('receta-beneficios').value = '';
+
+            renderRecetario();
+            alert("Receta publicada correctamente.");
+        }
+
+        async function agregarOpinionReceta(id) {
+            const nombreInput = document.getElementById(`opinion-nombre-${id}`);
+            const textoInput = document.getElementById(`opinion-texto-${id}`);
+            const nombre = nombreInput.value.trim();
+            const texto = textoInput.value.trim();
+
+            if (!nombre || !texto) {
+                alert("Escribe tu nombre y tu opinión.");
+                return;
+            }
+
+            const receta = recetasData.find(r => r.id === id);
+            if (!receta) return;
+
+            if (!receta.opiniones) receta.opiniones = [];
+            receta.opiniones.push({ nombre, texto });
+
+            await guardarRecetario();
+            abrirReceta(id);
+        }
+
+        async function borrarOpinionReceta(id, index) {
+            if (!confirm("¿Deseas borrar esta opinión?")) return;
+            const receta = recetasData.find(r => r.id === id);
+            if (!receta || !receta.opiniones) return;
+            receta.opiniones.splice(index, 1);
+            await guardarRecetario();
+            abrirReceta(id);
+        }
+
+        async function borrarReceta(id) {
+            if (!confirm("¿Deseas borrar esta receta?")) return;
+            recetasData = recetasData.filter(r => r.id !== id);
+            recetaSeleccionadaId = recetasData.length ? recetasData[0].id : null;
+            await guardarRecetario();
+            renderRecetario();
+        }
+
         function renderOpiniones() {
+            const listaOpiniones = document.getElementById('lista-opiniones');
+            if (!listaOpiniones) return;
+
             const esAdmin = session && session.isAdmin;
             const claseOcultar = esAdmin ? "" : "hidden";
 
-            document.getElementById('lista-opiniones').innerHTML = opinionesData.map(o => `
+            listaOpiniones.innerHTML = opinionesData.map(o => `
                 <div class="opinion-item">
                     <p style="margin:0;"><b>${o.nombre}:</b> "${o.texto}"</p>
                     <button class="btn-danger admin-only ${claseOcultar}" style="padding: 2px 8px;" onclick="borrarOpinion(${o.id})">Borrar</button>
