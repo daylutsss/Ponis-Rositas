@@ -35,6 +35,10 @@ rel="stylesheet">
     box-sizing:border-box;
 }
 
+.hidden{
+    display:none !important;
+}
+
 body{
     font-family:'Poppins',sans-serif;
     background:var(--bg);
@@ -680,12 +684,35 @@ body:not(.aira-admin) .aira-product-actions{
 }
 
 .aira-product-img{
-    width:100%;
-    height:220px;
+    width:4cm;
+    height:4cm;
+    max-width:100%;
     object-fit:cover;
-    border-radius:18px;
-    margin-bottom:15px;
+    border-radius:16px;
+    margin:0 auto 15px;
     border:1px solid var(--border);
+    display:block;
+}
+
+.aira-product-description{
+    white-space:pre-wrap;
+    line-height:1.7;
+}
+
+.aira-form-editing{
+    outline:3px solid rgba(140,0,4,.18);
+}
+
+.aira-cancel-edit{
+    width:100%;
+    margin-top:10px;
+    background:#666;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    border-radius:16px;
+    font-weight:bold;
+    cursor:pointer;
 }
 
 .aira-media-section{
@@ -1417,8 +1444,12 @@ margin:0;
             <label class="aira-file-label" for="airaImagen">📷 Imagen del producto</label>
             <input type="file" id="airaImagen" class="aira-input" accept="image/*">
 
-            <button class="aira-submit" onclick="guardarProductoAira()">
+            <button class="aira-submit" id="airaGuardarProductoBtn" onclick="guardarProductoAira()">
                 GUARDAR PRODUCTO
+            </button>
+
+            <button class="aira-cancel-edit hidden" id="airaCancelarEdicionBtn" onclick="cancelarEdicionProductoAira()">
+                CANCELAR EDICIÓN
             </button>
         </div>
 
@@ -1563,6 +1594,12 @@ function aplicarPermisosAira(){
 
 
 let productosAira = JSON.parse(localStorage.getItem("productosAira")) || [];
+let productoAiraEditandoId = null;
+productosAira = productosAira.map((item, index) => ({
+    id: item.id || Date.now() + index,
+    ...item
+}));
+localStorage.setItem("productosAira", JSON.stringify(productosAira));
 productosAira = productosAira.map((p, index) => ({
     id: p.id || Date.now() + index,
     ...p
@@ -1616,7 +1653,7 @@ function mostrarPaginaLive(){
 async function guardarProductoAira(){
     const sesion = obtenerSesionAira();
     if(!sesion || sesion.isAdmin !== true){
-        alert("Solo la administradora puede agregar productos. Inicia sesión como administradora en el sistema.");
+        alert("Solo la administradora puede agregar o editar productos. Inicia sesión como administradora en el sistema.");
         return;
     }
 
@@ -1630,25 +1667,60 @@ async function guardarProductoAira(){
         return;
     }
 
-    const imagen = await leerArchivoBase64(inputImagen);
+    const nuevaImagen = await leerArchivoBase64(inputImagen);
+
+    if(productoAiraEditandoId !== null){
+        const item = productosAira.find(p => p.id === productoAiraEditandoId);
+
+        if(!item){
+            alert("No se encontró el producto que estabas editando.");
+            cancelarEdicionProductoAira();
+            return;
+        }
+
+        item.producto = producto;
+        item.categoria = categoria || "Producto natural";
+        item.descripcion = descripcion;
+        if(nuevaImagen){
+            item.imagen = nuevaImagen;
+        }
+        item.fechaEdicion = new Date().toLocaleString();
+
+        localStorage.setItem("productosAira", JSON.stringify(productosAira));
+        limpiarFormularioProductoAira();
+        mostrarProductosAira();
+        alert("Producto editado correctamente.");
+        return;
+    }
 
     productosAira.unshift({
         id: Date.now(),
         producto,
         categoria: categoria || "Producto natural",
         descripcion,
-        imagen,
+        imagen: nuevaImagen,
         fecha: new Date().toLocaleString()
     });
 
     localStorage.setItem("productosAira", JSON.stringify(productosAira));
 
+    limpiarFormularioProductoAira();
+    mostrarProductosAira();
+}
+
+function limpiarFormularioProductoAira(){
     document.getElementById("airaProducto").value = "";
     document.getElementById("airaCategoria").value = "";
     document.getElementById("airaDescripcion").value = "";
-    inputImagen.value = "";
+    document.getElementById("airaImagen").value = "";
+    document.getElementById("airaGuardarProductoBtn").innerText = "GUARDAR PRODUCTO";
+    document.getElementById("airaCancelarEdicionBtn").classList.add("hidden");
+    document.querySelector(".aira-form").classList.remove("aira-form-editing");
+    productoAiraEditandoId = null;
+}
 
-    mostrarProductosAira();
+function cancelarEdicionProductoAira(){
+    limpiarFormularioProductoAira();
 }
 
 function mostrarProductosAira(){
@@ -1669,7 +1741,8 @@ function mostrarProductosAira(){
             ${item.imagen ? `<img class="aira-product-img" src="${item.imagen}" alt="${item.producto}">` : ""}
             <h3>${item.producto}</h3>
             <small>${item.categoria} • ${item.fecha || ""}</small>
-            <p>${item.descripcion}</p>
+            <p class="aira-product-description">${item.descripcion || ""}</p>
+            ${item.fechaEdicion ? `<small>Editado: ${item.fechaEdicion}</small>` : ""}
 
             <div class="aira-product-actions admin-aira-only">
                 <button class="aira-edit-btn" onclick="editarProductoAira(${item.id})">
@@ -1683,7 +1756,7 @@ function mostrarProductosAira(){
     `).join("");
 }
 
-async function editarProductoAira(id){
+function editarProductoAira(id){
     const sesion = obtenerSesionAira();
     if(!sesion || sesion.isAdmin !== true){
         alert("Solo la administradora puede editar productos.");
@@ -1696,28 +1769,18 @@ async function editarProductoAira(id){
         return;
     }
 
-    const nuevoNombre = prompt("Edita el nombre del producto:", producto.producto || "");
-    if(nuevoNombre === null) return;
+    productoAiraEditandoId = id;
 
-    const nuevaCategoria = prompt("Edita la categoría o tipo de producto:", producto.categoria || "Producto natural");
-    if(nuevaCategoria === null) return;
+    document.getElementById("airaProducto").value = producto.producto || "";
+    document.getElementById("airaCategoria").value = producto.categoria || "Producto natural";
+    document.getElementById("airaDescripcion").value = producto.descripcion || "";
+    document.getElementById("airaImagen").value = "";
+    document.getElementById("airaGuardarProductoBtn").innerText = "GUARDAR CAMBIOS DEL PRODUCTO";
+    document.getElementById("airaCancelarEdicionBtn").classList.remove("hidden");
+    document.querySelector(".aira-form").classList.add("aira-form-editing");
 
-    const nuevaDescripcion = prompt("Edita la descripción, ingredientes, beneficios o modo de uso:", producto.descripcion || "");
-    if(nuevaDescripcion === null) return;
-
-    if(!nuevoNombre.trim() || !nuevaDescripcion.trim()){
-        alert("El producto debe tener nombre y descripción.");
-        return;
-    }
-
-    producto.producto = nuevoNombre.trim();
-    producto.categoria = nuevaCategoria.trim() || "Producto natural";
-    producto.descripcion = nuevaDescripcion.trim();
-    producto.fechaEdicion = new Date().toLocaleString();
-
-    localStorage.setItem("productosAira", JSON.stringify(productosAira));
-    mostrarProductosAira();
-    alert("Producto editado correctamente.");
+    alert("Ya puedes editar el producto en el formulario. Si quieres cambiar la imagen, selecciona una nueva; si no seleccionas ninguna, se conserva la actual.");
+    document.querySelector(".aira-form").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 function eliminarProductoAira(id){
@@ -1797,7 +1860,8 @@ function mostrarMediaAira(){
                 : `<img src="${item.src}" alt="${item.titulo}">`
             }
             <h3>${item.titulo}</h3>
-            <p>${item.descripcion}</p>
+            <p class="aira-product-description">${item.descripcion || ""}</p>
+            ${item.fechaEdicion ? `<small>Editado: ${item.fechaEdicion}</small>` : ""}
             <small>${item.fecha || ""}</small>
         </div>
     `).join("");
@@ -1860,7 +1924,8 @@ function mostrarLiveAira(){
                 : `<img src="${item.src}" alt="${item.titulo}">`
             }
             <h3>${item.titulo}</h3>
-            <p>${item.descripcion}</p>
+            <p class="aira-product-description">${item.descripcion || ""}</p>
+            ${item.fechaEdicion ? `<small>Editado: ${item.fechaEdicion}</small>` : ""}
             <small>Publicado en vivo: ${item.fecha || ""}</small>
         </div>
     `).join("");
