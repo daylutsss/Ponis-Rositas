@@ -152,6 +152,76 @@
         .gallery-week-card h4 { margin: 0; color: #ffffff !important; font-size: 0.95rem; text-align: center; }
        
         .plant-owner-tag { background: rgba(255, 145, 0, 0.2); color: var(--accent); padding: 5px; text-align: center; font-weight: bold; border-radius: 8px; font-size: 0.85rem; }
+
+        /* --- CRONOGRAMA EDITABLE TIPO TABLA --- */
+        .cronograma-toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+        .cronograma-color-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+        }
+        #cronograma-color {
+            width: 42px;
+            height: 34px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        .cronograma-table-wrap {
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: rgba(0,0,0,0.05);
+            padding: 10px;
+        }
+        #cronograma-table {
+            min-width: 720px;
+            border-collapse: separate;
+            border-spacing: 6px;
+            margin: 0;
+        }
+        #cronograma-table th,
+        #cronograma-table td {
+            min-width: 140px;
+            height: 55px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--input-bg);
+            color: var(--input-text) !important;
+            vertical-align: top;
+            outline: none;
+            padding: 10px;
+        }
+        #cronograma-table th {
+            text-align: center;
+            font-weight: 800;
+            color: var(--accent) !important;
+        }
+        #cronograma-table td:focus,
+        #cronograma-table th:focus,
+        #cronograma-table .selected-cell {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255,145,0,0.18);
+        }
+        .cronograma-mini {
+            font-size: 0.82rem;
+            opacity: 0.85;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -389,21 +459,47 @@
 
         <div id="tab-cronograma" class="tab-pane hidden">
             <div class="card">
-                <h3>Agregar actividad al Cronograma</h3>
-                <p>Registra una actividad, fecha, acuerdo o tarea del proyecto. Se guardará en Neon.</p>
+                <h3>📅 Cronograma editable</h3>
+                <p>
+                    Aquí cada equipo puede organizar sus actividades como una tabla real.
+                    Pueden agregar filas, agregar columnas, escribir dentro de cada recuadro y pintar las celdas con el color que elijan.
+                </p>
 
-                <input type="text" id="cronograma-titulo" class="input-std" placeholder="Nombre de la actividad">
+                <div class="cronograma-toolbar">
+                    <button class="btn-accent" onclick="agregarFilaCronograma()">
+                        <i class="fa-solid fa-plus"></i> Agregar fila
+                    </button>
 
-                <textarea id="cronograma-texto" class="input-std" style="margin-top:10px; min-height:120px; resize:vertical;" placeholder="Describe la actividad, fecha o indicaciones"></textarea>
+                    <button class="btn-accent" onclick="agregarColumnaCronograma()">
+                        <i class="fa-solid fa-table-columns"></i> Agregar columna
+                    </button>
 
-                <input type="file" id="cronograma-imagen" class="input-std" accept="image/*" style="margin-top:10px;">
+                    <button class="btn-danger" onclick="eliminarFilaCronograma()">
+                        Eliminar última fila
+                    </button>
 
-                <button class="btn-accent" style="margin-top:10px;" onclick="agregarEntradaSeccion('cronograma')">
-                    <i class="fa-solid fa-floppy-disk"></i> GUARDAR CRONOGRAMA
-                </button>
+                    <button class="btn-danger" onclick="eliminarColumnaCronograma()">
+                        Eliminar última columna
+                    </button>
+
+                    <div class="cronograma-color-wrap">
+                        <span>Color de celda:</span>
+                        <input type="color" id="cronograma-color" value="#fff3b0" onchange="pintarCeldaCronograma()">
+                    </div>
+
+                    <button class="btn-accent" style="background:#2e7d32;" onclick="guardarCronogramaTabla()">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar cronograma
+                    </button>
+                </div>
+
+                <div class="cronograma-table-wrap">
+                    <table id="cronograma-table"></table>
+                </div>
+
+                <p class="cronograma-mini">
+                    Da clic en cualquier recuadro para escribir. Después selecciona un color y se pintará la celda elegida.
+                </p>
             </div>
-
-            <div id="grid-crono" class="grid-2"></div>
         </div>
 
         <div id="tab-salud" class="tab-pane hidden">
@@ -500,6 +596,8 @@
         let galeriaSemanas = {};
         let bitacoraData = [];
         let cronogramaData = [];
+        let cronogramaTabla = null;
+        let cronogramaCeldaSeleccionada = null;
         let scrollOffsets = { 'gallery-track-1': 0, 'gallery-track-2': 0 };
 
         async function api(url, options = {}) {
@@ -525,6 +623,7 @@
             await cargarContenidoEditable();
             await cargarGaleriaSemanas();
             await cargarEntradasSecciones();
+            await cargarCronogramaTabla();
 
             if (session) {
                 aplicarSesion();
@@ -728,7 +827,7 @@
             renderOpiniones();
             renderFotosUsuario();
             renderEntradasSeccion('bitacora');
-            renderEntradasSeccion('cronograma');
+            renderCronogramaTabla();
         }
 
         function logout() {
@@ -755,13 +854,203 @@
         async function cargarEntradasSecciones() {
             try {
                 bitacoraData = await api("/api/entradas/bitacora");
-                cronogramaData = await api("/api/entradas/cronograma");
-
                 renderEntradasSeccion('bitacora');
-                renderEntradasSeccion('cronograma');
             } catch (error) {
                 console.error(error);
-                alert("No se pudieron cargar Bitácora/Cronograma desde Neon. Revisa las rutas /api/entradas en server.js.");
+                alert("No se pudo cargar la Bitácora desde Neon. Revisa las rutas /api/entradas en server.js.");
+            }
+        }
+
+        async function cargarCronogramaTabla() {
+            try {
+                const data = await api("/api/contenido/cronograma_tabla");
+
+                if (data && data.cuerpo) {
+                    cronogramaTabla = JSON.parse(data.cuerpo);
+                } else {
+                    crearCronogramaBase();
+                }
+            } catch (error) {
+                console.error("No se cargó cronograma editable desde Neon, se usará uno básico:", error);
+                const guardadoLocal = localStorage.getItem("cronograma_tabla_local");
+
+                if (guardadoLocal) {
+                    cronogramaTabla = JSON.parse(guardadoLocal);
+                } else {
+                    crearCronogramaBase();
+                }
+            }
+
+            renderCronogramaTabla();
+        }
+
+        function crearCronogramaBase() {
+            cronogramaTabla = {
+                headers: ["Actividad", "Fecha", "Responsable", "Avance"],
+                rows: [
+                    [
+                        { text: "Preparar materiales", color: "" },
+                        { text: "Semana 1", color: "" },
+                        { text: "Equipo 1", color: "" },
+                        { text: "Pendiente", color: "" }
+                    ],
+                    [
+                        { text: "Elaborar producto", color: "" },
+                        { text: "Semana 2", color: "" },
+                        { text: "Equipo 2", color: "" },
+                        { text: "En proceso", color: "" }
+                    ]
+                ]
+            };
+        }
+
+        function renderCronogramaTabla() {
+            const table = document.getElementById("cronograma-table");
+            if (!table) return;
+
+            if (!cronogramaTabla) crearCronogramaBase();
+
+            const thead = `
+                <thead>
+                    <tr>
+                        ${cronogramaTabla.headers.map((h, i) => `
+                            <th contenteditable="true" data-col="${i}" oninput="actualizarHeaderCronograma(${i}, this.innerText)">
+                                ${h || "Columna " + (i + 1)}
+                            </th>
+                        `).join("")}
+                    </tr>
+                </thead>
+            `;
+
+            const tbody = `
+                <tbody>
+                    ${cronogramaTabla.rows.map((fila, r) => `
+                        <tr>
+                            ${fila.map((celda, c) => `
+                                <td contenteditable="true"
+                                    data-row="${r}"
+                                    data-col="${c}"
+                                    style="${celda.color ? `background:${celda.color};` : ""}"
+                                    onclick="seleccionarCeldaCronograma(this)"
+                                    onfocus="seleccionarCeldaCronograma(this)"
+                                    oninput="actualizarCeldaCronograma(${r}, ${c}, this.innerText)">
+                                    ${celda.text || ""}
+                                </td>
+                            `).join("")}
+                        </tr>
+                    `).join("")}
+                </tbody>
+            `;
+
+            table.innerHTML = thead + tbody;
+        }
+
+        function seleccionarCeldaCronograma(celda) {
+            document.querySelectorAll("#cronograma-table td, #cronograma-table th").forEach(x => x.classList.remove("selected-cell"));
+            cronogramaCeldaSeleccionada = celda;
+            celda.classList.add("selected-cell");
+
+            const colorActual = celda.style.backgroundColor;
+            if (colorActual && colorActual.startsWith("rgb")) {
+                document.getElementById("cronograma-color").value = rgbAHex(colorActual);
+            }
+        }
+
+        function rgbAHex(rgb) {
+            const valores = rgb.match(/\d+/g);
+            if (!valores) return "#fff3b0";
+            return "#" + valores.slice(0, 3).map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+            }).join("");
+        }
+
+        function pintarCeldaCronograma() {
+            if (!cronogramaCeldaSeleccionada) {
+                alert("Primero selecciona una celda del cronograma.");
+                return;
+            }
+
+            const color = document.getElementById("cronograma-color").value;
+            cronogramaCeldaSeleccionada.style.background = color;
+
+            const r = cronogramaCeldaSeleccionada.dataset.row;
+            const c = cronogramaCeldaSeleccionada.dataset.col;
+
+            if (r !== undefined && c !== undefined) {
+                cronogramaTabla.rows[Number(r)][Number(c)].color = color;
+            }
+        }
+
+        function actualizarHeaderCronograma(col, texto) {
+            cronogramaTabla.headers[col] = texto.trim() || ("Columna " + (col + 1));
+        }
+
+        function actualizarCeldaCronograma(row, col, texto) {
+            cronogramaTabla.rows[row][col].text = texto;
+        }
+
+        function agregarFilaCronograma() {
+            if (!cronogramaTabla) crearCronogramaBase();
+
+            const nuevaFila = cronogramaTabla.headers.map(() => ({ text: "", color: "" }));
+            cronogramaTabla.rows.push(nuevaFila);
+            renderCronogramaTabla();
+        }
+
+        function agregarColumnaCronograma() {
+            if (!cronogramaTabla) crearCronogramaBase();
+
+            const numero = cronogramaTabla.headers.length + 1;
+            const nombre = prompt("Nombre de la nueva columna:", "Columna " + numero) || ("Columna " + numero);
+
+            cronogramaTabla.headers.push(nombre);
+            cronogramaTabla.rows.forEach(fila => fila.push({ text: "", color: "" }));
+            renderCronogramaTabla();
+        }
+
+        function eliminarFilaCronograma() {
+            if (!cronogramaTabla || cronogramaTabla.rows.length <= 1) {
+                alert("Debe quedar al menos una fila.");
+                return;
+            }
+
+            if (confirm("¿Eliminar la última fila del cronograma?")) {
+                cronogramaTabla.rows.pop();
+                renderCronogramaTabla();
+            }
+        }
+
+        function eliminarColumnaCronograma() {
+            if (!cronogramaTabla || cronogramaTabla.headers.length <= 1) {
+                alert("Debe quedar al menos una columna.");
+                return;
+            }
+
+            if (confirm("¿Eliminar la última columna del cronograma?")) {
+                cronogramaTabla.headers.pop();
+                cronogramaTabla.rows.forEach(fila => fila.pop());
+                renderCronogramaTabla();
+            }
+        }
+
+        async function guardarCronogramaTabla() {
+            try {
+                localStorage.setItem("cronograma_tabla_local", JSON.stringify(cronogramaTabla));
+
+                await api("/api/contenido/cronograma_tabla", {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        titulo: "Cronograma editable",
+                        cuerpo: JSON.stringify(cronogramaTabla)
+                    })
+                });
+
+                alert("Cronograma guardado correctamente.");
+            } catch (error) {
+                console.error(error);
+                localStorage.setItem("cronograma_tabla_local", JSON.stringify(cronogramaTabla));
+                alert("No se pudo guardar en Neon, pero quedó guardado localmente en este navegador.");
             }
         }
 
