@@ -66,8 +66,17 @@ async function crearTablas() {
       imagen TEXT,
       fecha TIMESTAMP DEFAULT NOW()
     );
-  `);
 
+    CREATE TABLE IF NOT EXISTS productos_aira (
+    id SERIAL PRIMARY KEY,
+    producto TEXT NOT NULL,
+    categoria TEXT,
+    descripcion TEXT NOT NULL,
+    imagen TEXT,
+    fecha TIMESTAMP DEFAULT NOW()
+);
+  `);
+  
   console.log("Tablas listas en Neon/Postgres");
 }
 
@@ -334,6 +343,111 @@ app.delete("/api/entradas/:id", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al eliminar entrada" });
+  }
+});
+
+/* PRODUCTOS AIRA */
+
+app.get("/api/productos", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM productos_aira ORDER BY id DESC"
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al obtener productos"
+    });
+  }
+});
+
+app.post("/api/productos", async (req, res) => {
+  try {
+    const {
+      producto,
+      categoria,
+      descripcion,
+      imagen
+    } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO productos_aira
+      (producto,categoria,descripcion,imagen)
+      VALUES ($1,$2,$3,$4)
+      RETURNING *`,
+      [
+        producto,
+        categoria,
+        descripcion,
+        imagen || ""
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al guardar producto"
+    });
+  }
+});
+
+app.put("/api/productos/:id", async (req, res) => {
+  try {
+
+    const {
+      producto,
+      categoria,
+      descripcion,
+      imagen
+    } = req.body;
+
+    const result = await pool.query(
+      `UPDATE productos_aira
+       SET producto=$1,
+           categoria=$2,
+           descripcion=$3,
+           imagen=$4
+       WHERE id=$5
+       RETURNING *`,
+      [
+        producto,
+        categoria,
+        descripcion,
+        imagen,
+        req.params.id
+      ]
+    );
+
+    res.json(result.rows[0]);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error:"Error al editar producto"
+    });
+  }
+});
+
+app.delete("/api/productos/:id", async (req,res) => {
+  try {
+
+    await pool.query(
+      "DELETE FROM productos_aira WHERE id=$1",
+      [req.params.id]
+    );
+
+    res.json({
+      mensaje:"Producto eliminado"
+    });
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({
+      error:"Error al eliminar producto"
+    });
   }
 });
 
