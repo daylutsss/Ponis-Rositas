@@ -632,6 +632,44 @@ nav{
 }
 
 
+
+.aira-product-actions{
+    display:flex;
+    gap:10px;
+    margin-top:15px;
+    flex-wrap:wrap;
+}
+.aira-edit-btn{
+    flex:1;
+    background:#B8C944;
+    color:#3E2723;
+    border:none;
+    padding:10px 12px;
+    border-radius:14px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.3s;
+}
+.aira-delete-btn{
+    flex:1;
+    background:#8C0004;
+    color:white;
+    border:none;
+    padding:10px 12px;
+    border-radius:14px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.3s;
+}
+.aira-edit-btn:hover,
+.aira-delete-btn:hover{
+    transform:scale(1.03);
+    opacity:.9;
+}
+body:not(.aira-admin) .aira-product-actions{
+    display:none;
+}
+
 /* IMÁGENES Y GALERÍA AIRA */
 .aira-file-label{
     display:block;
@@ -1525,6 +1563,11 @@ function aplicarPermisosAira(){
 
 
 let productosAira = JSON.parse(localStorage.getItem("productosAira")) || [];
+productosAira = productosAira.map((p, index) => ({
+    id: p.id || Date.now() + index,
+    ...p
+}));
+localStorage.setItem("productosAira", JSON.stringify(productosAira));
 
 let mediaAira = JSON.parse(localStorage.getItem("mediaAira")) || [];
 let liveAira = JSON.parse(localStorage.getItem("liveAira")) || [];
@@ -1590,6 +1633,7 @@ async function guardarProductoAira(){
     const imagen = await leerArchivoBase64(inputImagen);
 
     productosAira.unshift({
+        id: Date.now(),
         producto,
         categoria: categoria || "Producto natural",
         descripcion,
@@ -1626,8 +1670,73 @@ function mostrarProductosAira(){
             <h3>${item.producto}</h3>
             <small>${item.categoria} • ${item.fecha || ""}</small>
             <p>${item.descripcion}</p>
+
+            <div class="aira-product-actions admin-aira-only">
+                <button class="aira-edit-btn" onclick="editarProductoAira(${item.id})">
+                    <i class="fa-solid fa-pen-to-square"></i> Editar producto
+                </button>
+                <button class="aira-delete-btn" onclick="eliminarProductoAira(${item.id})">
+                    <i class="fa-solid fa-trash"></i> Eliminar producto
+                </button>
+            </div>
         </div>
     `).join("");
+}
+
+async function editarProductoAira(id){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede editar productos.");
+        return;
+    }
+
+    const producto = productosAira.find(item => item.id === id);
+    if(!producto){
+        alert("No se encontró el producto.");
+        return;
+    }
+
+    const nuevoNombre = prompt("Edita el nombre del producto:", producto.producto || "");
+    if(nuevoNombre === null) return;
+
+    const nuevaCategoria = prompt("Edita la categoría o tipo de producto:", producto.categoria || "Producto natural");
+    if(nuevaCategoria === null) return;
+
+    const nuevaDescripcion = prompt("Edita la descripción, ingredientes, beneficios o modo de uso:", producto.descripcion || "");
+    if(nuevaDescripcion === null) return;
+
+    if(!nuevoNombre.trim() || !nuevaDescripcion.trim()){
+        alert("El producto debe tener nombre y descripción.");
+        return;
+    }
+
+    producto.producto = nuevoNombre.trim();
+    producto.categoria = nuevaCategoria.trim() || "Producto natural";
+    producto.descripcion = nuevaDescripcion.trim();
+    producto.fechaEdicion = new Date().toLocaleString();
+
+    localStorage.setItem("productosAira", JSON.stringify(productosAira));
+    mostrarProductosAira();
+    alert("Producto editado correctamente.");
+}
+
+function eliminarProductoAira(id){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede eliminar productos.");
+        return;
+    }
+
+    const producto = productosAira.find(item => item.id === id);
+    const nombreProducto = producto ? producto.producto : "este producto";
+
+    if(!confirm(`¿Deseas eliminar "${nombreProducto}"? Esta acción no se puede deshacer.`)){
+        return;
+    }
+
+    productosAira = productosAira.filter(item => item.id !== id);
+    localStorage.setItem("productosAira", JSON.stringify(productosAira));
+    mostrarProductosAira();
 }
 
 
