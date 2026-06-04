@@ -1600,26 +1600,249 @@ function aplicarPermisosAira(){
 }
 
 
-let productosAira = JSON.parse(localStorage.getItem("productosAira")) || [];
+let productosAira = [];
 let productoAiraEditandoId = null;
+let productosAiraUsandoServidor = false;
 
-productosAira = productosAira.map((item, index) => ({
-    ...item,
-    id: item.id || Date.now() + index
-}));
+async function apiProductosAira(url, options = {}){
+    const respuesta = await fetch(url, {
+        headers:{ "Content-Type":"application/json" },
+        ...options
+    });
 
-function guardarProductosAira(){
+    if(!respuesta.ok){
+        const texto = await respuesta.text();
+        throw new Error(texto || "Error de servidor");
+    }
+
+    return respuesta.json();
+}
+
+function normalizarProductoAira(item, index = 0){
+    return {
+        id: item.id || item.producto_id || Date.now() + index,
+        producto: item.producto || item.nombre || item.titulo || "Producto sin nombre",
+        categoria: item.categoria || "Producto natural",
+        descripcion: item.descripcion || "",
+        imagen: item.imagen || item.src || "",
+        fecha: item.fecha ? new Date(item.fecha).toLocaleString() : (item.fecha_texto || item.fecha || ""),
+        fechaEdicion: item.fecha_edicion ? new Date(item.fecha_edicion).toLocaleString() : (item.fechaEdicion || "")
+    };
+}
+
+async function cargarProductosAira(){
     try{
-        localStorage.setItem("productosAira", JSON.stringify(productosAira));
-        return true;
+        const data = await apiProductosAira("/api/productos");
+        productosAira = Array.isArray(data) ? data.map(normalizarProductoAira) : [];
+        productosAiraUsandoServidor = true;
+        localStorage.setItem("productosAira_respaldo", JSON.stringify(productosAira));
     }catch(error){
-        console.error(error);
-        alert("No se pudo guardar porque el navegador ya no tiene espacio. Prueba editar los productos viejos y cambiar sus imágenes por unas más pequeñas.");
-        return false;
+        console.error("No se pudieron cargar productos desde el servidor:", error);
+        productosAiraUsandoServidor = false;
+        productosAira = JSON.parse(localStorage.getItem("productosAira_respaldo") || localStorage.getItem("productosAira") || "[]")
+            .map(normalizarProductoAira);
+    }
+
+    mostrarProductosAira();
+}
+
+function guardarProductosAiraRespaldo(){
+    try{
+        localStorage.setItem("productosAira_respaldo", JSON.stringify(productosAira));
+    }catch(error){
+        console.error("No se pudo guardar respaldo local:", error);
     }
 }
 
-guardarProductosAira();
+async function sincronizarProductosLocalesAira(){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true) return;
+    if(!productosAiraUsandoServidor) return;
+
+    const locales = JSON.parse(localStorage.getItem("productosAira") || "[]").map(normalizarProductoAira);
+    if(locales.length === 0 || productosAira.length > 0) return;
+
+    const aceptar = confirm("Encontré productos guardados solo en esta computadora. ¿Quieres subirlos al servidor para que todos los visitantes puedan verlos?");
+    if(!aceptar) return;
+
+    try{
+        for(const item of locales){
+            await apiProductosAira("/api/productos", {
+                method:"POST",
+                body:JSON.stringify({
+                    producto:item.producto,
+                    categoria:item.categoria,
+                    descripcion:item.descripcion,
+                    imagen:item.imagen
+                })
+            });
+        }
+        localStorage.removeItem("productosAira");
+        await cargarProductosAira();
+        alert("Productos subidos al servidor correctamente. Ahora todos podrán verlos.");
+    }catch(error){
+        console.error(error);
+        alert("No se pudieron subir los productos locales al servidor. Revisa que tu server.js tenga la ruta POST /api/productos.");
+    }
+}
+
+async function guardarProductoAira(){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede agregar o editar productos. Inicia sesión como administradora en el sistema.");
+        return;
+    }
+
+    const producto = document.getElementById("airaProducto").value.trim();
+    const categoria = document.getElementById("airaCategoria").value.trim();
+    const descripcion = document.getElementById("airaDescripcion").value.trim();
+    const inputImagen = document.getElementById("airaImagen");
+
+    if(!producto || !descripcion){
+        alert("Escribe al menos el nombre del producto y su descripción.");
+        return;
+    }
+
+    const nuevaImagen = await leerArchivoBase64(inputImagen);
+
+    try{
+        if(productoAiraEditandoId !== null){
+            const productoActual = productosAira.find(p => String(p.id) === String(productoAiraEditandoId));
+
+            await apiProductosAira("/api/productos/" + productoAiraEditandoId, {
+                method:"PUT",
+                body:JSON.stringify({
+                    producto,
+                    categoria: categoria || "Producto natural",
+                    descripcion,
+                    imagen: nuevaImagen || (productoActual ? productoActual.imagen : "")
+                })
+            });
+
+            limpiarFormularioProductoAira();
+            await cargarProductosAira();
+            alert("Producto editado correctamente. Todos los visitantes verán el cambio.");
+            return;
+        }
+
+        await apiProductosAira("/api/productos", {
+            method:"POST",
+            body:JSON.stringify({
+                producto,
+                categoria: categoria || "Producto natural",
+                descripcion,
+                imagen: nuevaImagen
+            })
+        });
+
+        limpiarFormularioProductoAira();
+        await cargarProductosAira();
+        alert("Producto guardado correctamente. Todos los visitantes podrán verlo.");
+    }catch(error){
+        console.error(error);
+        alert("No se pudo guardar en el servidor. Revisa que Render/Neon tenga las rutas /api/productos. Si se guarda solo en localStorage, los demás no lo verán.");
+    }
+}
+
+function limpiarFormularioProductoAira(){
+    document.getElementById("airaProducto").value = "";
+    document.getElementById("airaCategoria").value = "";
+    document.getElementById("airaDescripcion").value = "";
+    document.getElementById("airaImagen").value = "";
+    document.getElementById("airaGuardarProductoBtn").innerText = "GUARDAR PRODUCTO";
+    document.getElementById("airaCancelarEdicionBtn").classList.add("hidden");
+    document.querySelector(".aira-form").classList.remove("aira-form-editing");
+    productoAiraEditandoId = null;
+}
+
+function cancelarEdicionProductoAira(){
+    limpiarFormularioProductoAira();
+}
+
+function mostrarProductosAira(){
+    const contenedor = document.getElementById("listaProductosAira");
+    if(!contenedor) return;
+
+    if(productosAira.length === 0){
+        contenedor.innerHTML = `
+            <div class="aira-empty">
+                Aún no hay productos registrados. Agrega el primero para comenzar a llenar el apartado AIRA.
+            </div>
+        `;
+        return;
+    }
+
+    contenedor.innerHTML = productosAira.map(item => `
+        <div class="aira-product-card animate__animated animate__fadeInUp">
+            ${item.imagen ? `<img class="aira-product-img" src="${item.imagen}" alt="${item.producto}">` : ""}
+            <h3>${item.producto}</h3>
+            <small>${item.categoria} • ${item.fecha || ""}</small>
+            <p class="aira-product-description">${item.descripcion || ""}</p>
+            ${item.fechaEdicion ? `<small>Editado: ${item.fechaEdicion}</small>` : ""}
+
+            <div class="aira-product-actions admin-aira-only">
+                <button class="aira-edit-btn" onclick="editarProductoAira('${item.id}')">
+                    <i class="fa-solid fa-pen-to-square"></i> Editar producto
+                </button>
+                <button class="aira-delete-btn" onclick="eliminarProductoAira('${item.id}')">
+                    <i class="fa-solid fa-trash"></i> Eliminar producto
+                </button>
+            </div>
+        </div>
+    `).join("");
+}
+
+function editarProductoAira(id){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede editar productos.");
+        return;
+    }
+
+    const producto = productosAira.find(item => String(item.id) === String(id));
+    if(!producto){
+        alert("No se encontró el producto.");
+        return;
+    }
+
+    productoAiraEditandoId = id;
+
+    document.getElementById("airaProducto").value = producto.producto || "";
+    document.getElementById("airaCategoria").value = producto.categoria || "Producto natural";
+    document.getElementById("airaDescripcion").value = producto.descripcion || "";
+    document.getElementById("airaImagen").value = "";
+    document.getElementById("airaGuardarProductoBtn").innerText = "GUARDAR CAMBIOS DEL PRODUCTO";
+    document.getElementById("airaCancelarEdicionBtn").classList.remove("hidden");
+    document.querySelector(".aira-form").classList.add("aira-form-editing");
+
+    alert("Ya puedes editar el producto en el formulario. Si quieres cambiar la imagen, selecciona una nueva; si no seleccionas ninguna, se conserva la actual.");
+    document.querySelector(".aira-form").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+async function eliminarProductoAira(id){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true){
+        alert("Solo la administradora puede eliminar productos.");
+        return;
+    }
+
+    const producto = productosAira.find(item => String(item.id) === String(id));
+    const nombreProducto = producto ? producto.producto : "este producto";
+
+    if(!confirm(`¿Deseas eliminar "${nombreProducto}"? Esta acción no se puede deshacer.`)){
+        return;
+    }
+
+    try{
+        await apiProductosAira("/api/productos/" + id, { method:"DELETE" });
+        await cargarProductosAira();
+        alert("Producto eliminado correctamente para todos los visitantes.");
+    }catch(error){
+        console.error(error);
+        alert("No se pudo eliminar en el servidor. Revisa la ruta DELETE /api/productos/:id.");
+    }
+}
+
 
 let mediaAira = JSON.parse(localStorage.getItem("mediaAira")) || [];
 let liveAira = JSON.parse(localStorage.getItem("liveAira")) || [];
@@ -1674,14 +1897,14 @@ function leerArchivoBase64(input){
     });
 }
 
-
-function mostrarPaginaAira(){
+async function mostrarPaginaAira(){
     aplicarPermisosAira();
     document.getElementById("pagina-principal").classList.add("hidden-page");
     document.getElementById("pagina-live").classList.remove("active");
     document.getElementById("pagina-aira").classList.add("active");
     window.scrollTo({top:0, behavior:"smooth"});
-    mostrarProductosAira();
+    await cargarProductosAira();
+    await sincronizarProductosLocalesAira();
     mostrarMediaAira();
 }
 
@@ -1701,157 +1924,6 @@ function mostrarPaginaLive(){
     mostrarLiveAira();
 }
 
-async function guardarProductoAira(){
-    const sesion = obtenerSesionAira();
-    if(!sesion || sesion.isAdmin !== true){
-        alert("Solo la administradora puede agregar o editar productos. Inicia sesión como administradora en el sistema.");
-        return;
-    }
-
-    const producto = document.getElementById("airaProducto").value.trim();
-    const categoria = document.getElementById("airaCategoria").value.trim();
-    const descripcion = document.getElementById("airaDescripcion").value.trim();
-    const inputImagen = document.getElementById("airaImagen");
-
-    if(!producto || !descripcion){
-        alert("Escribe al menos el nombre del producto y su descripción.");
-        return;
-    }
-
-    const nuevaImagen = await leerArchivoBase64(inputImagen);
-
-    if(productoAiraEditandoId !== null){
-        const item = productosAira.find(p => p.id === productoAiraEditandoId);
-
-        if(!item){
-            alert("No se encontró el producto que estabas editando.");
-            cancelarEdicionProductoAira();
-            return;
-        }
-
-        item.producto = producto;
-        item.categoria = categoria || "Producto natural";
-        item.descripcion = descripcion;
-        if(nuevaImagen){
-            item.imagen = nuevaImagen;
-        }
-        item.fechaEdicion = new Date().toLocaleString();
-
-        if(!guardarProductosAira()) return;
-        limpiarFormularioProductoAira();
-        mostrarProductosAira();
-        alert("Producto editado correctamente.");
-        return;
-    }
-
-    productosAira.unshift({
-        id: Date.now(),
-        producto,
-        categoria: categoria || "Producto natural",
-        descripcion,
-        imagen: nuevaImagen,
-        fecha: new Date().toLocaleString()
-    });
-
-    if(!guardarProductosAira()) return;
-
-    limpiarFormularioProductoAira();
-    mostrarProductosAira();
-}
-
-function limpiarFormularioProductoAira(){
-    document.getElementById("airaProducto").value = "";
-    document.getElementById("airaCategoria").value = "";
-    document.getElementById("airaDescripcion").value = "";
-    document.getElementById("airaImagen").value = "";
-    document.getElementById("airaGuardarProductoBtn").innerText = "GUARDAR PRODUCTO";
-    document.getElementById("airaCancelarEdicionBtn").classList.add("hidden");
-    document.querySelector(".aira-form").classList.remove("aira-form-editing");
-    productoAiraEditandoId = null;
-}
-
-function cancelarEdicionProductoAira(){
-    limpiarFormularioProductoAira();
-}
-
-function mostrarProductosAira(){
-    const contenedor = document.getElementById("listaProductosAira");
-    if(!contenedor) return;
-
-    if(productosAira.length === 0){
-        contenedor.innerHTML = `
-            <div class="aira-empty">
-                Aún no hay productos registrados. Agrega el primero para comenzar a llenar el apartado AIRA.
-            </div>
-        `;
-        return;
-    }
-
-    contenedor.innerHTML = productosAira.map(item => `
-        <div class="aira-product-card animate__animated animate__fadeInUp">
-            ${item.imagen ? `<img class="aira-product-img" src="${item.imagen}" alt="${item.producto}">` : ""}
-            <h3>${item.producto}</h3>
-            <small>${item.categoria} • ${item.fecha || ""}</small>
-            <p class="aira-product-description">${item.descripcion || ""}</p>
-            ${item.fechaEdicion ? `<small>Editado: ${item.fechaEdicion}</small>` : ""}
-
-            <div class="aira-product-actions admin-aira-only">
-                <button class="aira-edit-btn" onclick="editarProductoAira(${item.id})">
-                    <i class="fa-solid fa-pen-to-square"></i> Editar producto
-                </button>
-                <button class="aira-delete-btn" onclick="eliminarProductoAira(${item.id})">
-                    <i class="fa-solid fa-trash"></i> Eliminar producto
-                </button>
-            </div>
-        </div>
-    `).join("");
-}
-
-function editarProductoAira(id){
-    const sesion = obtenerSesionAira();
-    if(!sesion || sesion.isAdmin !== true){
-        alert("Solo la administradora puede editar productos.");
-        return;
-    }
-
-    const producto = productosAira.find(item => item.id === id);
-    if(!producto){
-        alert("No se encontró el producto.");
-        return;
-    }
-
-    productoAiraEditandoId = id;
-
-    document.getElementById("airaProducto").value = producto.producto || "";
-    document.getElementById("airaCategoria").value = producto.categoria || "Producto natural";
-    document.getElementById("airaDescripcion").value = producto.descripcion || "";
-    document.getElementById("airaImagen").value = "";
-    document.getElementById("airaGuardarProductoBtn").innerText = "GUARDAR CAMBIOS DEL PRODUCTO";
-    document.getElementById("airaCancelarEdicionBtn").classList.remove("hidden");
-    document.querySelector(".aira-form").classList.add("aira-form-editing");
-
-    alert("Ya puedes editar el producto en el formulario. Si quieres cambiar la imagen, selecciona una nueva; si no seleccionas ninguna, se conserva la actual.");
-    document.querySelector(".aira-form").scrollIntoView({behavior:"smooth", block:"start"});
-}
-
-function eliminarProductoAira(id){
-    const sesion = obtenerSesionAira();
-    if(!sesion || sesion.isAdmin !== true){
-        alert("Solo la administradora puede eliminar productos.");
-        return;
-    }
-
-    const producto = productosAira.find(item => item.id === id);
-    const nombreProducto = producto ? producto.producto : "este producto";
-
-    if(!confirm(`¿Deseas eliminar "${nombreProducto}"? Esta acción no se puede deshacer.`)){
-        return;
-    }
-
-    productosAira = productosAira.filter(item => item.id !== id);
-    guardarProductosAira();
-    mostrarProductosAira();
-}
 
 
 
@@ -2072,7 +2144,7 @@ function mostrarOpiniones(){
 }
 
 aplicarPermisosAira();
-mostrarProductosAira();
+cargarProductosAira();
 mostrarMediaAira();
 mostrarLiveAira();
 mostrarOpiniones();
