@@ -227,15 +227,20 @@ app.post("/api/comentarios", async (req, res) => {
   try {
     const { nombre, comentario } = req.body;
 
+    if (!comentario) {
+      return res.status(400).json({ error: "Falta el comentario" });
+    }
+
     const result = await pool.query(
       `INSERT INTO comentarios (nombre, comentario)
-       VALUES ($1,$2)
+       VALUES ($1, $2)
        RETURNING *`,
       [nombre || "Anónimo", comentario]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
+    console.error("ERROR AL GUARDAR COMENTARIO:", error);
     res.status(500).json({ error: "Error al guardar comentario" });
   }
 });
