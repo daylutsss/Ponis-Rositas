@@ -1184,6 +1184,78 @@ body:not(.aira-admin) .live-admin-alert{
 
 
 
+
+
+/* HUERTO POLINIZADOR COMO PÁGINA INTERNA */
+.logo-huerto{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    line-height:1.02;
+    font-size:1.05rem;
+    font-weight:bold;
+    color:#2f6b2f;
+    text-decoration:none;
+    cursor:pointer;
+    transition:.3s;
+    background:rgba(47,107,47,.10);
+    padding:7px 14px;
+    border-radius:18px;
+    min-width:92px;
+    text-align:center;
+}
+.logo-huerto:hover{
+    color:white;
+    background:#2f6b2f;
+    transform:scale(1.04);
+}
+.huerto-page{
+    display:none;
+    min-height:100vh;
+    padding:140px 10% 80px;
+    background:linear-gradient(135deg,#eef8ea,#f8f4df);
+}
+.huerto-page.active{
+    display:block;
+}
+.huerto-page-box{
+    max-width:1150px;
+    margin:auto;
+    background:white;
+    border-radius:35px;
+    padding:45px;
+    box-shadow:0 15px 40px rgba(0,0,0,.13);
+}
+.huerto-page-header{
+    text-align:center;
+    margin-bottom:35px;
+}
+.huerto-page-header h1{
+    color:#2f6b2f;
+    font-size:3rem;
+    margin-bottom:10px;
+}
+.huerto-empty-box{
+    min-height:280px;
+    border:3px dashed rgba(47,107,47,.25);
+    border-radius:28px;
+    background:#f8f4df;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:#2f6b2f;
+    font-weight:600;
+    padding:25px;
+}
+@media(max-width:650px){
+    .logo-huerto{font-size:.78rem; min-width:72px; padding:6px 9px;}
+    .huerto-page-box{padding:25px;}
+    .huerto-page-header h1{font-size:2.1rem;}
+}
+
+
 /* CRONOGRAMA PONIS ROSITAS */
 .cronograma-section{
     padding:90px 8%;
@@ -1302,6 +1374,8 @@ footer{
     <a class="logo-aira" onclick="mostrarPaginaAira()">AIRA</a>
     <div class="brand-divider"></div>
     <a class="logo-live" onclick="mostrarPaginaLive()"><span class="live-dot"></span> LIVE</a>
+    <div class="brand-divider"></div>
+    <a class="logo-huerto" onclick="mostrarPaginaHuerto()"><span>Huerto</span><span>Polinizador</span></a>
 </div>
 
 <div class="nav-actions">
@@ -1655,6 +1729,22 @@ margin:0;
     </div>
 </section>
 
+<!-- PÁGINA INTERNA HUERTO POLINIZADOR -->
+<section id="pagina-huerto" class="huerto-page">
+    <div class="huerto-page-box">
+        <a class="volver-btn" onclick="mostrarPaginaPrincipal()">← Volver a Ponis Rositas Web</a>
+
+        <div class="huerto-page-header">
+            <h1>🌿 Huerto Polinizador</h1>
+            <p>Este apartado queda preparado para agregar información, evidencias, imágenes o actividades del huerto polinizador.</p>
+        </div>
+
+        <div class="huerto-empty-box">
+            Apartado vacío por el momento.
+        </div>
+    </div>
+</section>
+
 <footer>
     <div>© Ponis Rositas 🦄</div>
     <div class="footer-social">
@@ -1983,21 +2073,114 @@ async function eliminarProductoAira(id){
 }
 
 
+
 function normalizarMediaAira(item, index = 0){
     return {
-        id: item.id || Date.now() + index,
-        titulo: item.titulo || "Diagrama de flujo",
+        id: item.id || item.media_id || item.diagrama_id || Date.now() + index,
+        titulo: item.titulo || item.nombre || "Diagrama de flujo",
         descripcion: item.descripcion || "",
         tipo: "imagen",
-        src: item.src || "",
-        fecha: item.fecha || "",
-        fechaEdicion: item.fechaEdicion || ""
+        src: item.src || item.imagen || item.archivo || "",
+        fecha: item.fecha ? new Date(item.fecha).toLocaleString() : (item.fecha_texto || item.fecha || ""),
+        fechaEdicion: item.fecha_edicion ? new Date(item.fecha_edicion).toLocaleString() : (item.fechaEdicion || "")
     };
 }
 
-let mediaAira = (JSON.parse(localStorage.getItem("mediaAira")) || []).map(normalizarMediaAira);
+function normalizarLiveAira(item, index = 0){
+    const src = item.src || item.archivo || item.media || item.imagen || item.video || "";
+    const tipoDetectado = item.tipo || item.tipo_archivo || (String(src).startsWith("data:video") ? "video" : "imagen");
+    return {
+        id: item.id || item.live_id || Date.now() + index,
+        titulo: item.titulo || item.nombre || "Publicación en vivo",
+        descripcion: item.descripcion || "",
+        tipo: String(tipoDetectado).toLowerCase().includes("video") ? "video" : "imagen",
+        src,
+        fecha: item.fecha ? new Date(item.fecha).toLocaleString() : (item.fecha_texto || item.fecha || ""),
+        fechaEdicion: item.fecha_edicion ? new Date(item.fecha_edicion).toLocaleString() : (item.fechaEdicion || "")
+    };
+}
+
+let mediaAira = (JSON.parse(localStorage.getItem("mediaAira_respaldo") || localStorage.getItem("mediaAira") || "[]") || []).map(normalizarMediaAira);
 let mediaAiraEditandoId = null;
-let liveAira = JSON.parse(localStorage.getItem("liveAira")) || [];
+let mediaAiraUsandoServidor = false;
+let liveAira = (JSON.parse(localStorage.getItem("liveAira_respaldo") || localStorage.getItem("liveAira") || "[]") || []).map(normalizarLiveAira);
+let liveAiraUsandoServidor = false;
+
+async function apiAiraJson(ruta, options = {}){
+    const respuesta = await fetch(ruta, {
+        headers:{ "Content-Type":"application/json" },
+        ...options
+    });
+
+    if(!respuesta.ok){
+        const texto = await respuesta.text();
+        throw new Error(texto || "Error de servidor");
+    }
+
+    return respuesta.json();
+}
+
+async function cargarMediaAira(){
+    try{
+        const data = await apiAiraJson("/api/aira-diagramas");
+        mediaAira = Array.isArray(data) ? data.map(normalizarMediaAira) : [];
+        mediaAiraUsandoServidor = true;
+        localStorage.setItem("mediaAira_respaldo", JSON.stringify(mediaAira));
+    }catch(error){
+        console.error("No se pudieron cargar diagramas desde el servidor:", error);
+        mediaAiraUsandoServidor = false;
+        mediaAira = (JSON.parse(localStorage.getItem("mediaAira_respaldo") || localStorage.getItem("mediaAira") || "[]") || []).map(normalizarMediaAira);
+    }
+
+    mostrarMediaAira();
+}
+
+async function sincronizarMediaLocalAira(){
+    const sesion = obtenerSesionAira();
+    if(!sesion || sesion.isAdmin !== true) return;
+    if(!mediaAiraUsandoServidor) return;
+
+    const locales = (JSON.parse(localStorage.getItem("mediaAira") || "[]") || []).map(normalizarMediaAira);
+    if(locales.length === 0 || mediaAira.length > 0) return;
+
+    const aceptar = confirm("Encontré diagramas guardados solo en esta computadora. ¿Quieres subirlos al servidor para que todos puedan verlos?");
+    if(!aceptar) return;
+
+    try{
+        for(const item of locales){
+            await apiAiraJson("/api/aira-diagramas", {
+                method:"POST",
+                body:JSON.stringify({
+                    titulo:item.titulo,
+                    descripcion:item.descripcion,
+                    src:item.src,
+                    tipo:"imagen"
+                })
+            });
+        }
+        localStorage.removeItem("mediaAira");
+        await cargarMediaAira();
+        alert("Diagramas subidos al servidor correctamente. Ahora todos podrán verlos.");
+    }catch(error){
+        console.error(error);
+        alert("No se pudieron subir los diagramas locales. Revisa que server.js tenga la ruta POST /api/aira-diagramas.");
+    }
+}
+
+async function cargarLiveAira(){
+    try{
+        const data = await apiAiraJson("/api/aira-live");
+        liveAira = Array.isArray(data) ? data.map(normalizarLiveAira) : [];
+        liveAiraUsandoServidor = true;
+        localStorage.setItem("liveAira_respaldo", JSON.stringify(liveAira));
+    }catch(error){
+        console.error("No se pudo cargar LIVE desde el servidor:", error);
+        liveAiraUsandoServidor = false;
+        liveAira = (JSON.parse(localStorage.getItem("liveAira_respaldo") || localStorage.getItem("liveAira") || "[]") || []).map(normalizarLiveAira);
+    }
+
+    mostrarLiveAira();
+}
 
 function leerArchivoBase64(input){
     return new Promise((resolve) => {
@@ -2053,16 +2236,19 @@ async function mostrarPaginaAira(){
     aplicarPermisosAira();
     document.getElementById("pagina-principal").classList.add("hidden-page");
     document.getElementById("pagina-live").classList.remove("active");
+    document.getElementById("pagina-huerto")?.classList.remove("active");
     document.getElementById("pagina-aira").classList.add("active");
     window.scrollTo({top:0, behavior:"smooth"});
     await cargarProductosAira();
     await sincronizarProductosLocalesAira();
-    mostrarMediaAira();
+    await cargarMediaAira();
+    await sincronizarMediaLocalAira();
 }
 
 function mostrarPaginaPrincipal(){
     document.getElementById("pagina-aira").classList.remove("active");
     document.getElementById("pagina-live").classList.remove("active");
+    document.getElementById("pagina-huerto")?.classList.remove("active");
     document.getElementById("pagina-principal").classList.remove("hidden-page");
     window.scrollTo({top:0, behavior:"smooth"});
 }
@@ -2071,13 +2257,19 @@ function mostrarPaginaLive(){
     aplicarPermisosAira();
     document.getElementById("pagina-principal").classList.add("hidden-page");
     document.getElementById("pagina-aira").classList.remove("active");
+    document.getElementById("pagina-huerto")?.classList.remove("active");
     document.getElementById("pagina-live").classList.add("active");
     window.scrollTo({top:0, behavior:"smooth"});
-    mostrarLiveAira();
+    cargarLiveAira();
 }
 
-
-
+function mostrarPaginaHuerto(){
+    document.getElementById("pagina-principal").classList.add("hidden-page");
+    document.getElementById("pagina-aira").classList.remove("active");
+    document.getElementById("pagina-live").classList.remove("active");
+    document.getElementById("pagina-huerto")?.classList.add("active");
+    window.scrollTo({top:0, behavior:"smooth"});
+}
 
 async function guardarMediaAira(){
     const sesion = obtenerSesionAira();
@@ -2108,37 +2300,41 @@ async function guardarMediaAira(){
 
     const nuevaImagen = archivoSeleccionado ? await leerArchivoBase64(inputArchivo) : "";
 
-    if(mediaAiraEditandoId !== null){
-        const index = mediaAira.findIndex(item => String(item.id) === String(mediaAiraEditandoId));
-        if(index === -1){
-            alert("No se encontró el diagrama para editar.");
-            cancelarEdicionMediaAira();
+    try{
+        if(mediaAiraEditandoId !== null){
+            const diagramaActual = mediaAira.find(item => String(item.id) === String(mediaAiraEditandoId));
+            await apiAiraJson("/api/aira-diagramas/" + mediaAiraEditandoId, {
+                method:"PUT",
+                body:JSON.stringify({
+                    titulo,
+                    descripcion: descripcion || "Diagrama de flujo AIRA",
+                    src: nuevaImagen || (diagramaActual ? diagramaActual.src : ""),
+                    tipo:"imagen"
+                })
+            });
+            limpiarFormularioMediaAira();
+            await cargarMediaAira();
+            alert("Diagrama editado correctamente. Todos los visitantes verán el cambio.");
             return;
         }
 
-        mediaAira[index] = {
-            ...mediaAira[index],
-            titulo,
-            descripcion: descripcion || "Diagrama de flujo AIRA",
-            tipo: "imagen",
-            src: nuevaImagen || mediaAira[index].src,
-            fechaEdicion: new Date().toLocaleString()
-        };
-    }else{
-        mediaAira.unshift({
-            id: Date.now(),
-            titulo,
-            descripcion: descripcion || "Diagrama de flujo AIRA",
-            tipo: "imagen",
-            src: nuevaImagen,
-            fecha: new Date().toLocaleString(),
-            fechaEdicion: ""
+        await apiAiraJson("/api/aira-diagramas", {
+            method:"POST",
+            body:JSON.stringify({
+                titulo,
+                descripcion: descripcion || "Diagrama de flujo AIRA",
+                src: nuevaImagen,
+                tipo:"imagen"
+            })
         });
-    }
 
-    localStorage.setItem("mediaAira", JSON.stringify(mediaAira));
-    limpiarFormularioMediaAira();
-    mostrarMediaAira();
+        limpiarFormularioMediaAira();
+        await cargarMediaAira();
+        alert("Diagrama guardado correctamente. Todos los visitantes podrán verlo.");
+    }catch(error){
+        console.error(error);
+        alert("No se pudo guardar en el servidor. Revisa que Render/Neon tenga las rutas /api/aira-diagramas. Si se guarda solo en localStorage, los demás no lo verán.");
+    }
 }
 
 function limpiarFormularioMediaAira(){
@@ -2180,7 +2376,7 @@ function editarMediaAira(id){
     document.querySelector(".aira-media-form").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
-function eliminarMediaAira(id){
+async function eliminarMediaAira(id){
     const sesion = obtenerSesionAira();
     if(!sesion || sesion.isAdmin !== true){
         alert("Solo la administradora puede eliminar diagramas.");
@@ -2194,14 +2390,15 @@ function eliminarMediaAira(id){
         return;
     }
 
-    mediaAira = mediaAira.filter(item => String(item.id) !== String(id));
-    localStorage.setItem("mediaAira", JSON.stringify(mediaAira));
-
-    if(String(mediaAiraEditandoId) === String(id)){
-        limpiarFormularioMediaAira();
+    try{
+        await apiAiraJson("/api/aira-diagramas/" + id, { method:"DELETE" });
+        if(String(mediaAiraEditandoId) === String(id)) limpiarFormularioMediaAira();
+        await cargarMediaAira();
+        alert("Diagrama eliminado correctamente para todos los visitantes.");
+    }catch(error){
+        console.error(error);
+        alert("No se pudo eliminar en el servidor. Revisa la ruta DELETE /api/aira-diagramas/:id.");
     }
-
-    mostrarMediaAira();
 }
 
 function mostrarMediaAira(){
@@ -2209,7 +2406,7 @@ function mostrarMediaAira(){
     if(!contenedor) return;
 
     mediaAira = mediaAira.map(normalizarMediaAira);
-    localStorage.setItem("mediaAira", JSON.stringify(mediaAira));
+    localStorage.setItem("mediaAira_respaldo", JSON.stringify(mediaAira));
 
     if(mediaAira.length === 0){
         contenedor.innerHTML = `
@@ -2259,26 +2456,34 @@ async function guardarLiveAira(){
     const archivo = inputArchivo.files[0];
     const src = await leerArchivoBase64(inputArchivo);
 
-    liveAira.unshift({
-        titulo,
-        descripcion,
-        tipo: archivo.type.startsWith("video") ? "video" : "imagen",
-        src,
-        fecha: new Date().toLocaleString()
-    });
+    try{
+        await apiAiraJson("/api/aira-live", {
+            method:"POST",
+            body:JSON.stringify({
+                titulo,
+                descripcion,
+                tipo: archivo.type.startsWith("video") ? "video" : "imagen",
+                src
+            })
+        });
 
-    localStorage.setItem("liveAira", JSON.stringify(liveAira));
-
-    document.getElementById("airaLiveTitulo").value = "";
-    document.getElementById("airaLiveDescripcion").value = "";
-    inputArchivo.value = "";
-
-    mostrarLiveAira();
+        document.getElementById("airaLiveTitulo").value = "";
+        document.getElementById("airaLiveDescripcion").value = "";
+        inputArchivo.value = "";
+        await cargarLiveAira();
+        alert("Publicación LIVE guardada correctamente. Todos los visitantes podrán verla.");
+    }catch(error){
+        console.error(error);
+        alert("No se pudo guardar LIVE en el servidor. Revisa que Render/Neon tenga las rutas /api/aira-live. Si se guarda solo en localStorage, los demás no lo verán.");
+    }
 }
 
 function mostrarLiveAira(){
     const contenedor = document.getElementById("listaLiveAira");
     if(!contenedor) return;
+
+    liveAira = liveAira.map(normalizarLiveAira);
+    localStorage.setItem("liveAira_respaldo", JSON.stringify(liveAira));
 
     if(liveAira.length === 0){
         contenedor.innerHTML = `
