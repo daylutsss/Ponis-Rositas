@@ -93,6 +93,34 @@ async function crearTablas() {
       tipo TEXT DEFAULT 'imagen',
       fecha TIMESTAMP DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS recetas_lavanda (
+  id SERIAL PRIMARY KEY,
+  titulo TEXT NOT NULL,
+  ingredientes TEXT NOT NULL,
+  pasos TEXT NOT NULL,
+  beneficios TEXT NOT NULL,
+  imagen TEXT,
+  fecha TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS opiniones_productos (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  producto TEXT,
+  opinion TEXT NOT NULL,
+  estrellas INTEGER DEFAULT 5,
+  fecha TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS polinizadores (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  descripcion TEXT NOT NULL,
+  relacion_jardin TEXT,
+  imagen TEXT,
+  fecha TIMESTAMP DEFAULT NOW()
+);
   `);
 
   await pool.query(`
@@ -513,6 +541,205 @@ app.delete("/api/aira-live/:id", async (req, res) => {
   }
 });
 
+/* =========================
+   RECETAS CON LAVANDA
+========================= */
+
+app.get("/api/recetas-lavanda", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM recetas_lavanda ORDER BY id DESC"
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener recetas" });
+  }
+});
+
+app.post("/api/recetas-lavanda", async (req, res) => {
+  try {
+    const {
+      titulo,
+      ingredientes,
+      pasos,
+      beneficios,
+      imagen
+    } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO recetas_lavanda
+      (titulo, ingredientes, pasos, beneficios, imagen)
+      VALUES ($1,$2,$3,$4,$5)
+      RETURNING *`,
+      [
+        titulo,
+        ingredientes,
+        pasos,
+        beneficios,
+        imagen || ""
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({
+      error:"Error al guardar receta"
+    });
+  }
+});
+
+app.delete("/api/recetas-lavanda/:id", async (req,res) => {
+  try {
+
+    await pool.query(
+      "DELETE FROM recetas_lavanda WHERE id=$1",
+      [req.params.id]
+    );
+
+    res.json({
+      mensaje:"Receta eliminada"
+    });
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({
+      error:"Error al eliminar receta"
+    });
+  }
+});
+
+/* =========================
+   OPINIONES PRODUCTOS
+========================= */
+
+app.get("/api/opiniones-productos", async (req,res) => {
+  try {
+
+    const result = await pool.query(
+      "SELECT * FROM opiniones_productos ORDER BY id DESC"
+    );
+
+    res.json(result.rows);
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({
+      error:"Error al obtener opiniones"
+    });
+  }
+});
+
+app.post("/api/opiniones-productos", async (req,res) => {
+  try {
+
+    const {
+      nombre,
+      producto,
+      opinion,
+      estrellas
+    } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO opiniones_productos
+      (nombre, producto, opinion, estrellas)
+      VALUES ($1,$2,$3,$4)
+      RETURNING *`,
+      [
+        nombre || "Anónimo",
+        producto || "",
+        opinion,
+        estrellas || 5
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({
+      error:"Error al guardar opinión"
+    });
+  }
+});
+
+app.delete("/api/opiniones-productos/:id", async (req,res) => {
+  try {
+
+    await pool.query(
+      "DELETE FROM opiniones_productos WHERE id=$1",
+      [req.params.id]
+    );
+
+    res.json({
+      mensaje:"Opinión eliminada"
+    });
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({
+      error:"Error al eliminar opinión"
+    });
+  }
+});
+
+/* =========================
+   POLINIZADORES
+========================= */
+
+app.get("/api/polinizadores", async (req,res) => {
+  try {
+
+    const result = await pool.query(
+      "SELECT * FROM polinizadores ORDER BY id DESC"
+    );
+
+    res.json(result.rows);
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({
+      error:"Error al obtener polinizadores"
+    });
+  }
+});
+
+app.post("/api/polinizadores", async (req,res) => {
+  try {
+
+    const {
+      nombre,
+      descripcion,
+      relacion_jardin,
+      imagen
+    } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO polinizadores
+      (nombre, descripcion, relacion_jardin, imagen)
+      VALUES ($1,$2,$3,$4)
+      RETURNING *`,
+      [
+        nombre,
+        descripcion,
+        relacion_jardin,
+        imagen || ""
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({
+      error:"Error al guardar polinizador"
+    });
+  }
+});
+  
+        
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
