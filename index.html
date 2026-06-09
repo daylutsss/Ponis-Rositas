@@ -2604,6 +2604,7 @@ function mostrarLiveAira(){
 }
 
 
+
 let calificacionActual = 5;
 let opiniones = [];
 let recetasLavanda = [];
@@ -2621,108 +2622,188 @@ async function apiProyecto(url, options = {}){
     return respuesta.json();
 }
 
+function limpiarHTML(texto){
+    return String(texto ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
+
 function ponerAnonimo(){
-    document.getElementById("nombreOpinion").value = "Anónimo";
+    const input = document.getElementById("nombreOpinion");
+    if(input) input.value = "Anónimo";
 }
 
 function seleccionarEstrellas(valor){
-    calificacionActual = valor;
+    calificacionActual = Number(valor) || 5;
     const estrellas = document.querySelectorAll("#estrellasSeleccion .estrella");
-    estrellas.forEach((estrella, index) => estrella.classList.toggle("activa", index < valor));
-    document.getElementById("textoCalificacion").innerText = valor + (valor === 1 ? " estrella" : " estrellas");
+    estrellas.forEach((estrella, index) => {
+        estrella.classList.toggle("activa", index < calificacionActual);
+    });
+
+    const texto = document.getElementById("textoCalificacion");
+    if(texto){
+        texto.innerText = calificacionActual + (calificacionActual === 1 ? " estrella" : " estrellas");
+    }
 }
 
+/* 
+   Migra opiniones que pudieron quedar guardadas en el navegador.
+   Después las borra del dispositivo para que ya no dependan de localStorage.
+*/
 async function migrarOpinionesLocales(){
+    const posiblesClaves = [
+        "opinionesBotanica",
+        "opiniones",
+        "opinionesPonis",
+        "comentariosPonis",
+        "opinionesAira"
+    ];
+
     try{
-        const locales = JSON.parse(localStorage.getItem("opinionesBotanica") || "[]");
-        if(!Array.isArray(locales) || locales.length === 0) return;
-        for(const op of locales){
-            await apiProyecto("/api/opiniones", {
-                method:"POST",
-                body:JSON.stringify({
-                    nombre: op.nombre || "Anónimo",
-                    texto: op.texto || op.comentario || "",
-                    estrellas: op.estrellas || 5,
-                    seccion:"general"
-                })
-            });
+        for(const clave of posiblesClaves){
+            const textoGuardado = localStorage.getItem(clave);
+            if(!textoGuardado) continue;
+
+            let locales = [];
+            try{
+                locales = JSON.parse(textoGuardado);
+            }catch(e){
+                locales = [];
+            }
+
+            if(!Array.isArray(locales) || locales.length === 0){
+                localStorage.removeItem(clave);
+                continue;
+            }
+
+            for(const op of locales){
+                const comentario = op.comentario || op.texto || op.opinion || "";
+                if(!comentario) continue;
+
+                await apiProyecto("/api/comentarios", {
+                    method:"POST",
+                    body:JSON.stringify({
+                        nombre: op.nombre || "Anónimo",
+                        comentario: comentario,
+                        estrellas: Number(op.estrellas || op.calificacion || 5)
+                    })
+                });
+            }
+
+            localStorage.removeItem(clave);
         }
-        localStorage.removeItem("opinionesBotanica");
-        alert("Encontré opiniones guardadas solo en este dispositivo y ya las subí a la base de datos para que todos puedan verlas.");
     }catch(error){
-        console.error("No se pudieron migrar opiniones locales", error);
+        console.error("No se pudieron migrar opiniones locales:", error);
     }
 }
 
 async function cargarOpiniones(){
     try{
         await migrarOpinionesLocales();
-        opiniones = await apiProyecto("/api/opiniones");
+
+        /*
+           Ruta principal: /api/comentarios
+           Si tu server.js también tiene /api/opiniones, el código intenta usarla como respaldo.
+        */
+        try{
+            opiniones = await apiProyecto("/api/comentarios");
+        }catch(errorComentarios){
+            console.warn("No se pudo cargar /api/comentarios, intentando /api/opiniones", errorComentarios);
+            opiniones = await apiProyecto("/api/opiniones");
+        }
+
+        if(!Array.isArray(opiniones)) opiniones = [];
     }catch(error){
-        console.error(error);
+        console.error("Error al cargar opiniones:", error);
         opiniones = [];
     }
+
     mostrarOpiniones();
 }
 
 async function guardarOpinion(){
-    const nombre = document.getElementById("nombreOpinion").value.trim() || "Anónimo";
-    const texto = document.getElementById("textoOpinion").value.trim();
+    const nombreInput = document.getElementById("nombreOpinion");
+    const textoInput = document.getElementById("textoOpinion");
 
-    if(!texto){
+    const nombre = nombreInput ? nombreInput.value.trim() || "Anónimo" : "Anónimo";
+    const comentario = textoInput ? textoInput.value.trim() : "";
+
+    if(!comentario){
         alert("Escribe una opinión antes de enviarla.");
         return;
     }
 
     try{
-        await fetch("/api/comentarios", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+        await apiProyecto("/api/comentarios", {
+            method:"POST",
+            body:JSON.stringify({
                 nombre: nombre,
-                comentario: texto
+                comentario: comentario,
+                estrellas: Number(calificacionActual || 5)
             })
         });
 
-        document.getElementById("nombreOpinion").value = "";
-        document.getElementById("textoOpinion").value = "";
+        if(nombreInput) nombreInput.value = "";
+        if(textoInput) textoInput.value = "";
         seleccionarEstrellas(5);
 
+        await cargarOpiniones();
         alert("Opinión registrada correctamente.");
-        location.reload();
-
     }catch(error){
-        console.error(error);
-        alert("No se pudo registrar la opinión en la base de datos.");
+        console.error("Error al guardar opinión:", error);
+        alert("No se pudo registrar la opinión en la base de datos. Revisa que el server.js acepte nombre, comentario y estrellas.");
     }
 }
 
 function mostrarOpiniones(){
     const contenedor = document.getElementById("listaOpiniones");
     if(!contenedor) return;
-    contenedor.innerHTML = "";
-    if(opiniones.length === 0){
-        contenedor.innerHTML = `<div class="opinion-vacia">Aún no hay opiniones. Sé la primera persona en dejar una calificación ⭐</div>`;
-        document.getElementById("promedio-estrellas").innerText = "⭐ 0.0 / 5";
-        document.getElementById("total-opiniones").innerText = "Basado en 0 opiniones";
+
+    if(!Array.isArray(opiniones) || opiniones.length === 0){
+        contenedor.innerHTML = `
+            <div class="opinion-vacia">
+                Aún no hay opiniones. Sé la primera persona en dejar una calificación ⭐
+            </div>
+        `;
+
+        const promedioEl = document.getElementById("promedio-estrellas");
+        const totalEl = document.getElementById("total-opiniones");
+        if(promedioEl) promedioEl.innerText = "⭐ 0.0 / 5";
+        if(totalEl) totalEl.innerText = "Basado en 0 opiniones";
         return;
     }
+
     let suma = 0;
-    opiniones.forEach(opinion => {
-        suma += Number(opinion.estrellas || 5);
-        contenedor.innerHTML += `
+
+    contenedor.innerHTML = opiniones.map(opinion => {
+        const estrellas = Math.max(1, Math.min(5, Number(opinion.estrellas || opinion.calificacion || 5)));
+        suma += estrellas;
+
+        const nombre = limpiarHTML(opinion.nombre || "Anónimo");
+        const comentario = limpiarHTML(opinion.comentario || opinion.texto || opinion.opinion || "");
+        const fecha = opinion.fecha ? new Date(opinion.fecha).toLocaleString("es-MX") : "";
+
+        return `
             <div class="opinion-card animate__animated animate__fadeInUp">
                 <div class="opinion-card-top">
-                    <span class="opinion-nombre">${opinion.nombre || "Anónimo"}</span>
-                    <span class="opinion-estrellas">${"⭐".repeat(Number(opinion.estrellas || 5))}</span>
+                    <span class="opinion-nombre">${nombre}</span>
+                    <span class="opinion-estrellas">${"⭐".repeat(estrellas)} <small>(${estrellas}/5)</small></span>
                 </div>
-                <p>${opinion.texto || opinion.comentario || ""}</p>
-                <small>${opinion.fecha ? new Date(opinion.fecha).toLocaleString() : ""}</small>
-            </div>`;
-    });
+                <p>${comentario}</p>
+                ${fecha ? `<small>${fecha}</small>` : ""}
+            </div>
+        `;
+    }).join("");
+
     const promedio = (suma / opiniones.length).toFixed(1);
-    document.getElementById("promedio-estrellas").innerText = `⭐ ${promedio} / 5`;
-    document.getElementById("total-opiniones").innerText = `Basado en ${opiniones.length} ${opiniones.length === 1 ? "opinión" : "opiniones"}`;
+    const promedioEl = document.getElementById("promedio-estrellas");
+    const totalEl = document.getElementById("total-opiniones");
+
+    if(promedioEl) promedioEl.innerText = `⭐ ${promedio} / 5`;
+    if(totalEl) totalEl.innerText = `Basado en ${opiniones.length} ${opiniones.length === 1 ? "opinión" : "opiniones"}`;
 }
 
 async function guardarRecetaLavanda(){
