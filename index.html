@@ -1598,43 +1598,6 @@ margin:0;
   </div>
 </section>
 
-<!-- APIs DEL PROYECTO -->
-<section class="extra-paee-section" id="apis-proyecto">
-  <div class="extra-paee-box">
-    <h2 class="section-title" style="margin-bottom:20px;">🌦️ Servicios de API</h2>
-    <p style="text-align:center;max-width:850px;margin:auto;line-height:1.8;">Esta sección conecta la página con servicios tipo API para mostrar condiciones del huerto y consultar información nutricional escolar de ingredientes.</p>
-    <div class="extra-grid">
-      <div class="extra-card">
-        <h3>Clima del Huerto Polinizador</h3>
-        <button class="aira-submit" onclick="cargarClimaHuerto()">ACTUALIZAR CLIMA</button>
-        <div id="resultadoClima" class="api-result">Presiona el botón para consultar el clima del huerto.</div>
-      </div>
-      <div class="extra-card">
-        <h3>Consulta nutricional</h3>
-        <input id="ingredienteNutricion" class="aira-input" placeholder="Ejemplo: lavanda, miel, limón, avena, plátano" value="lavanda">
-        <button class="aira-submit" onclick="consultarNutricion()">CONSULTAR INGREDIENTE</button>
-        <div id="resultadoNutricion" class="api-result">Aquí aparecerá la información del ingrediente.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CAMPAÑA DIGITAL -->
-<section class="extra-paee-section" id="campania-digital">
-  <div class="extra-paee-box">
-    <h2 class="section-title" style="margin-bottom:20px;">📣 Digitalización y Publicidad</h2>
-    <p style="text-align:center;max-width:850px;margin:auto;line-height:1.8;">El proyecto se presenta como campaña digital mediante redes sociales, hashtags, mini videos, infografías y evidencias publicadas en línea.</p>
-    <div class="campaign-tags">
-      <span>#LavandaSaludable</span><span>#BienestarEscolar</span><span>#AIRA</span><span>#HuertoPolinizador</span><span>#VidaSaludable</span>
-    </div>
-    <div class="extra-grid" style="margin-top:25px;">
-      <div class="extra-card"><h3>Instagram</h3><p>Publicación de avances, fotos del producto y evidencias de presentación.</p></div>
-      <div class="extra-card"><h3>TikTok</h3><p>Mini videos con música y narración para explicar recetas y procedimientos.</p></div>
-      <div class="extra-card"><h3>Facebook</h3><p>Difusión comunitaria de resultados, reflexiones y beneficios de la lavanda.</p></div>
-    </div>
-  </div>
-</section>
-
 <section class="opiniones-section" id="opiniones">
     <div class="opiniones-box">
         <div class="opiniones-header">
@@ -2705,20 +2668,32 @@ async function cargarOpiniones(){
 async function guardarOpinion(){
     const nombre = document.getElementById("nombreOpinion").value.trim() || "Anónimo";
     const texto = document.getElementById("textoOpinion").value.trim();
-    if(!texto){ alert("Escribe una opinión antes de enviarla."); return; }
+
+    if(!texto){
+        alert("Escribe una opinión antes de enviarla.");
+        return;
+    }
+
     try{
-        await apiProyecto("/api/opiniones", {
-            method:"POST",
-            body:JSON.stringify({ nombre, texto, estrellas: calificacionActual, seccion:"productos" })
+        await fetch("/api/comentarios", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                nombre: nombre,
+                comentario: texto
+            })
         });
+
         document.getElementById("nombreOpinion").value = "";
         document.getElementById("textoOpinion").value = "";
         seleccionarEstrellas(5);
-        await cargarOpiniones();
-        await cargarAnalisisDatos();
+
+        alert("Opinión registrada correctamente.");
+        location.reload();
+
     }catch(error){
         console.error(error);
-        alert("No se pudo guardar la opinión en la base de datos.");
+        alert("No se pudo registrar la opinión en la base de datos.");
     }
 }
 
