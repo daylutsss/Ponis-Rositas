@@ -225,17 +225,17 @@ app.get("/api/comentarios", async (req, res) => {
 
 app.post("/api/comentarios", async (req, res) => {
   try {
-    const { nombre, comentario } = req.body;
+    const { nombre, comentario, estrellas } = req.body;
 
     if (!comentario) {
       return res.status(400).json({ error: "Falta el comentario" });
     }
 
     const result = await pool.query(
-      `INSERT INTO comentarios (nombre, comentario)
-       VALUES ($1, $2)
+      `INSERT INTO comentarios (nombre, comentario, estrellas)
+       VALUES ($1, $2, $3)
        RETURNING *`,
-      [nombre || "Anónimo", comentario]
+      [nombre || "Anónimo", comentario, estrellas || 5]
     );
 
     res.status(201).json(result.rows[0]);
